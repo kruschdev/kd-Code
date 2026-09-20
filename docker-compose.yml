@@ -1,39 +1,24 @@
 version: "3.8"
 
 services:
-  t3code-server:
-    build: .
-    container_name: t3code-server
-    restart: unless-stopped
-    ports:
-      - "3773:3773"
-    environment:
-      - DATABASE_URL=${DATABASE_URL:-postgres://t3code:password@db:5432/t3code}
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434/api/embeddings}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      db:
-        condition: service_healthy
-
   db:
     image: pgvector/pgvector:pg16
-    container_name: t3code-db
+    container_name: kdcode
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-t3code}
+      POSTGRES_USER: ${POSTGRES_USER:-kdcode}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
-      POSTGRES_DB: ${POSTGRES_DB:-t3code}
+      POSTGRES_DB: ${POSTGRES_DB:-kdcode}
     volumes:
-      - t3code-postgres-data:/var/lib/postgresql/data
+      - kdcode-postgres-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-t3code}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-kdcode}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
 volumes:
-  t3code-postgres-data:
+  kdcode-postgres-data:
+    external: true
