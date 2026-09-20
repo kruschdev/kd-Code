@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "krusch-context-mcp": {
+      "command": "node",
+      "args": [
+        "/home/krusch/homelab/projects/krusch-context-mcp/src/index.js"
+      ],
+      "cwd": "/home/krusch/homelab/projects/krusch-context-mcp",
+      "env": {
+        "DB_HOST": "localhost",
+        "DB_PORT": "5432",
+        "DB_NAME": "kdcode",
+        "DB_USER": "kdcode",
+        "DB_PASSWORD": "password",
+        "OLLAMA_URL": "http://localhost:11434",
+        "DOTENV_CONFIG_QUIET": "true",
+        "KRUSCH_PROFILE": "ecosystem"
+      }
+    }
+  }
+}
