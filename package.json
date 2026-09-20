@@ -1,5 +1,5 @@
 {
-  "name": "@t3tools/monorepo",
+  "name": "@krusch/ide",
   "description": "Developer workbench and AI control plane: switch seamlessly between Claude, Gemini, and local models without ever losing project context or architectural state.",
   "private": true,
   "workspaces": {
@@ -30,6 +30,8 @@
     "dev": "bun scripts/dev-runner.ts dev",
     "dev:web": "bun scripts/dev-runner.ts dev:web",
     "dev:desktop": "bun scripts/dev-runner.ts dev:desktop",
+    "bridge": "node scripts/context-cli.js serve 3778",
+    "bridge:status": "node scripts/context-cli.js health",
     "start:desktop": "turbo run start --filter=@t3tools/desktop",
     "start:mock-update-server": "node scripts/mock-update-server.ts",
     "build": "turbo run build",

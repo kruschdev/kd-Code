@@ -24,6 +24,7 @@ import { createInterface } from 'node:readline';
 import http from 'node:http';
 
 const SERVER = '/home/krusch/homelab/projects/krusch-context-mcp/src/index.js';
+const HARNESS_SERVER = '/home/krusch/homelab/projects/krusch/bin/krusch.js';
 const PRE_ROUTER_PATH = '/home/krusch/homelab/projects/krusch-pre-router/dist/index.js';
 
 let preRouter = null;
@@ -102,6 +103,78 @@ export async function invokeTool(toolName, toolArgs = {}) {
     }
 
     return res.result?.content?.[0]?.text;
+  } catch (err) {
+    child.kill('SIGTERM');
+    throw err;
+  }
+}
+
+export async function invokeHarnessTool(toolName, toolArgs = {}) {
+  const child = spawn('node', [HARNESS_SERVER, 'mcp'], {
+    stdio: ['pipe', 'pipe', 'inherit'],
+    env: {
+      ...process.env,
+      DATABASE_URL: process.env.DATABASE_URL || 'postgresql://kdcode:password@localhost:5432/kdcode',
+      DOTENV_CONFIG_QUIET: 'true'
+    }
+  });
+
+  const rl = createInterface({ input: child.stdout, crlfDelay: Infinity });
+  let nextId = 1;
+  const pending = new Map();
+
+  rl.on('line', (line) => {
+    try {
+      const msg = JSON.parse(line);
+      if (msg.id && pending.has(msg.id)) {
+        pending.get(msg.id)(msg);
+        pending.delete(msg.id);
+      }
+    } catch {
+      // Ignore non-JSON logs
+    }
+  });
+
+  const send = (method, params = {}) => {
+    return new Promise((resolve, reject) => {
+      const id = nextId++;
+      pending.set(id, resolve);
+      child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method, params, id }) + '\n');
+      setTimeout(() => {
+        if (pending.has(id)) {
+          pending.delete(id);
+          reject(new Error(`Timeout on ${method}`));
+        }
+      }, 20000);
+    });
+  };
+
+  try {
+    await send('initialize', {
+      protocolVersion: '2024-11-05',
+      capabilities: {},
+      clientInfo: { name: 'kdcode-bridge', version: '1.0.0' }
+    });
+    child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
+    await new Promise(r => setTimeout(r, 100));
+
+    const res = await send('tools/call', {
+      name: toolName,
+      arguments: toolArgs
+    });
+
+    child.kill('SIGTERM');
+
+    if (res.error) {
+      throw new Error(`MCP error: ${JSON.stringify(res.error)}`);
+    }
+
+    const text = res.result?.content?.[0]?.text;
+    try {
+      return JSON.parse(text);
+    } catch {
+      return text;
+    }
   } catch (err) {
     child.kill('SIGTERM');
     throw err;
@@ -252,6 +325,56 @@ export function startBridgeServer(port = 3778) {
         return;
       }
 
+      if (url.pathname === '/api/harness/run' && req.method === 'POST') {
+        const body = await readBody();
+        const out = await invokeHarnessTool('krusch_run', {
+          goal: body.goal || body.prompt || '',
+          projectPath: body.projectPath || process.cwd(),
+          modelOverride: body.modelOverride,
+          autoApprove: Boolean(body.autoApprove)
+        });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(out));
+        return;
+      }
+
+      if (url.pathname === '/api/harness/status' && req.method === 'GET') {
+        const taskId = url.searchParams.get('taskId');
+        if (!taskId) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Missing taskId parameter' }));
+          return;
+        }
+        const out = await invokeHarnessTool('krusch_task_status', { taskId });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(out));
+        return;
+      }
+
+      if (url.pathname === '/api/harness/diff' && req.method === 'GET') {
+        const taskId = url.searchParams.get('taskId');
+        if (!taskId) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Missing taskId parameter' }));
+          return;
+        }
+        const out = await invokeHarnessTool('krusch_diff', { taskId });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(out));
+        return;
+      }
+
+      if (url.pathname === '/api/harness/apply' && req.method === 'POST') {
+        const body = await readBody();
+        const out = await invokeHarnessTool('krusch_apply_diff', {
+          taskId: body.taskId,
+          diffId: body.diffId
+        });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(out));
+        return;
+      }
+
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Endpoint not found' }));
     } catch (err) {
@@ -262,7 +385,8 @@ export function startBridgeServer(port = 3778) {
 
   server.listen(port, '0.0.0.0', () => {
     console.log(`[KD Code Bridge] Server running on http://localhost:${port}`);
-    console.log(`- Endpoints: /api/health, /api/route, /api/state, /api/memory, /api/nudge`);
+    console.log(`- Memory Endpoints:  /api/health, /api/route, /api/state, /api/memory, /api/nudge`);
+    console.log(`- Harness Endpoints: /api/harness/run, /api/harness/status, /api/harness/diff, /api/harness/apply`);
   });
 
   return server;
@@ -384,6 +508,48 @@ Commands:
     case 'centroids': {
       const out = await invokeTool('krusch_context_list_semantic_centroids');
       console.log(out);
+      break;
+    }
+    case 'harness-run': {
+      if (!args[0]) {
+        console.error('Usage: harness-run "<goal>" [projectPath]');
+        process.exit(1);
+      }
+      const out = await invokeHarnessTool('krusch_run', {
+        goal: args[0],
+        projectPath: args[1] || process.cwd()
+      });
+      console.log(JSON.stringify(out, null, 2));
+      break;
+    }
+    case 'harness-status': {
+      if (!args[0]) {
+        console.error('Usage: harness-status <taskId>');
+        process.exit(1);
+      }
+      const out = await invokeHarnessTool('krusch_task_status', { taskId: args[0] });
+      console.log(JSON.stringify(out, null, 2));
+      break;
+    }
+    case 'harness-diff': {
+      if (!args[0]) {
+        console.error('Usage: harness-diff <taskId>');
+        process.exit(1);
+      }
+      const out = await invokeHarnessTool('krusch_diff', { taskId: args[0] });
+      console.log(JSON.stringify(out, null, 2));
+      break;
+    }
+    case 'harness-apply': {
+      if (!args[0]) {
+        console.error('Usage: harness-apply <taskId> [diffId]');
+        process.exit(1);
+      }
+      const out = await invokeHarnessTool('krusch_apply_diff', {
+        taskId: args[0],
+        diffId: args[1] ? Number(args[1]) : undefined
+      });
+      console.log(JSON.stringify(out, null, 2));
       break;
     }
     case 'serve': {

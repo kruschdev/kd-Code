@@ -5,6 +5,41 @@ import { readEnvironmentConnection } from "./environments/runtime";
 import { getOrCreateMcpClient } from "./mcpClient";
 
 const environmentApiOverridesForTests = new Map<EnvironmentId, EnvironmentApi>();
+const BRIDGE_URL = "http://localhost:3778";
+
+async function dispatchToBridge(command: any): Promise<any> {
+  try {
+    if (command?.type === "thread.turn.start") {
+      const prompt = command.message?.text || "";
+      const res = await fetch(`${BRIDGE_URL}/api/harness/run`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          goal: prompt,
+          projectPath: command.bootstrap?.createThread?.worktreePath || undefined,
+        }),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } else if (command?.type === "thread.approval.respond") {
+      const res = await fetch(`${BRIDGE_URL}/api/harness/apply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: command.threadId,
+          diffId: command.requestId ? Number(command.requestId) : undefined,
+        }),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    }
+  } catch (err) {
+    console.warn("[Bridge Dispatch] Error dispatching to bridge:", err);
+  }
+  return null;
+}
 
 async function callMcpTool<T>(name: string, args: any): Promise<T> {
   const mcpClient = await getOrCreateMcpClient("http://localhost:3773/mcp/sse");
@@ -172,6 +207,10 @@ export function createEnvironmentApi(rpcClient: WsRpcClient): EnvironmentApi {
         try {
           return await callMcpTool("orchestration_dispatch_command", { command: input });
         } catch (error) {
+          const bridgeResult = await dispatchToBridge(input);
+          if (bridgeResult) {
+            return bridgeResult as never;
+          }
           console.warn("[MCP Fallback] dispatchCommand failed, falling back to RPC", error);
           return rpcClient.orchestration.dispatchCommand(input);
         }
@@ -180,6 +219,15 @@ export function createEnvironmentApi(rpcClient: WsRpcClient): EnvironmentApi {
         try {
           return await callMcpTool("orchestration_get_turn_diff", input);
         } catch (error) {
+          try {
+            const res = await fetch(`${BRIDGE_URL}/api/harness/diff?taskId=${encodeURIComponent((input as any).threadId || "")}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.diffs) {
+                return data as never;
+              }
+            }
+          } catch {}
           console.warn("[MCP Fallback] getTurnDiff failed, falling back to RPC", error);
           return rpcClient.orchestration.getTurnDiff(input);
         }
@@ -188,6 +236,15 @@ export function createEnvironmentApi(rpcClient: WsRpcClient): EnvironmentApi {
         try {
           return await callMcpTool("orchestration_get_full_thread_diff", input);
         } catch (error) {
+          try {
+            const res = await fetch(`${BRIDGE_URL}/api/harness/diff?taskId=${encodeURIComponent((input as any).threadId || "")}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.diffs) {
+                return data as never;
+              }
+            }
+          } catch {}
           console.warn("[MCP Fallback] getFullThreadDiff failed, falling back to RPC", error);
           return rpcClient.orchestration.getFullThreadDiff(input);
         }

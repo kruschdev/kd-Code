@@ -1,91 +1,58 @@
-# Krusch DBOS Agent Context
+# KD Code Agent Context
 
-> **Project Origin**: A highly-concurrent, horizontally scalable agentic coding environment retrofitted from the original Krusch DBOS web UI. This repository implements a Database-Oriented Operating System (DBOS) architecture.
+> **Project Origin**: Visual workbench and developer control-plane UI for the KruschDev ecosystem. KD Code pairs directly with the headless `krusch` ACID staging harness, `krusch-pre-router`, and the `krusch-context-mcp` memory plane.
 
 ## ⚠️ Hazards & Critical Safety Rules
 
-- **NEVER use `docker-compose down -v`**: The PostgreSQL container utilizes the `pgvector` extension and stores critical RAG embeddings and database orchestrations. Wiping the volume destroys all active queues and memory context. Use `docker-compose down` (without `-v`) or `docker restart`.
+- **NEVER use `docker-compose down -v`**: The PostgreSQL container utilizes the `pgvector` extension and stores critical RAG embeddings, memory centroids, and orchestration queues. Wiping the volume destroys all active context. Use `docker-compose down` (without `-v`) or `docker restart`.
 - **NEVER use `it.live` in tests**: The Effect integration tests are vulnerable to fiber leakage when using standard `@effect/vitest` functions. You **MUST** use the custom `itLive` wrapper from the integration harness to ensure clean teardown and prevent the test runner from hanging indefinitely.
-- **SQLITE_BUSY / SQLite Drivers**: This repository has fully migrated to a PostgreSQL-backed architecture via `@effect/sql-pg`. Do **NOT** attempt to scaffold `better-sqlite3` or legacy local files. All orchestrations occur over PostgreSQL `JSONB`.
+- **Do NOT mutate disk directly from model reasoning**: In this ecosystem, all agent disk mutations must pass through `krusch` pre-commit staging (`krusch_staged_diffs`) and sandboxed verification (`krusch.verify.json`) before a 2PC commit to disk.
+- **SQLITE_BUSY / SQLite Drivers**: Primary memory and orchestration occur over PostgreSQL `JSONB` and `pgvector`. Do **NOT** scaffold local SQLite files for shared state.
 
 ## 🚀 Quick Start
 
 ```bash
-# 1. Start the PostgreSQL DBOS Persistence Layer
+# 1. Start the PostgreSQL Persistence Layer
 docker compose up -d
 
 # 2. Install dependencies
 bun install
 
-# 3. Run database migrations and bootstrap schema
-bun run dev:server --migrate
+# 3. Start the Ecosystem Bridge Daemon (port 3778)
+bun run bridge
 
-# 4. Start the Development Server & Thin Client UI
-bun run dev
+# 4. Start the Development Server & Workbench UI (port 5733)
+bun run dev:web
+# Or start the desktop Electron client:
+# bun run dev:desktop
 ```
 
 ## 🏗️ Architecture Overview
 
-The Krusch DBOS architecture decouples heavy Node.js LLM execution environments from lightweight client UIs. By replacing in-memory Node.js loops with a stateless client-server model, multiple agents can safely execute concurrent tasks.
+The KruschDev ecosystem cleanly separates **visual interaction** from **transactional execution** and **persistent memory**:
 
-- **DBOS `SKIP LOCKED` Queues**: In-memory orchestration loops have been transitioned to Postgres-native job queues. Workers poll for pending jobs using `SELECT ... FOR UPDATE SKIP LOCKED`, ensuring tasks are consumed exactly once across multi-node deployments without lock contention.
-- **DBOS Native Tool Execution**: The `AgentExecutionEngine` background worker natively processes `EXECUTE_TOOLS` queue payloads. This enables agents to modify the file system (`edit_file`, `write_to_file`) and execute system commands (`bash`) natively on the server, streaming outputs back to the DBOS UI via ACID-compliant event dispatching.
-- **Universal RAG Embeddings**: All AI Provider Adapters (Gemini, Claude, Codex) ingest semantic embeddings asynchronously via `VectorEmbeddingWorker`. The system supports dynamic embedding providers (ollama, gemini, openai, none) configured via the UI settings, defaulting to a privacy-first local `ollama` pipeline that queries `pgvector` via the unified `RAGContext` layer.
-- **HALO Optimization Loop**: A local-first `HaloOptimizerService` (inspired by the [context-labs/halo](https://github.com/context-labs/halo) framework) runs entirely decoupled from the main thread, performing nightly sweeps on execution traces. Using local Ollama text-generation and native `nomic-embed-text` vector embedding, it synthesizes agent failure states into actionable behavioral nudges natively within the `orchestration_nuggets` table.
-- **Stateless Execution**: The Electron desktop app and React web UI serve strictly as thin clients communicating over websockets (`ws.ts`) and HTTP (`http.ts`).
+- **Stateless Glass (KD Code)**: The Electron desktop app and React web UI (`apps/web`, `apps/desktop`) serve as thin clients providing rich chat, thread navigation, project management, and pre-commit diff review (`@pierre/diffs`).
+- **Transactional Harness (`krusch`)**: Headless execution engine. Holds model-generated diffs in PostgreSQL (`krusch_staged_diffs`), verifies them against test contracts in a staged sandbox, and applies them to disk only after approval via a 2PC journal (`krusch_apply_journal`).
+- **Universal Memory Plane (`krusch-context-mcp`)**: Pinned v1.6.3 memory service. Manages project state compilation (`krusch_context_compile_state`), AST symbol extraction with hybrid RRF, episodic memory, and holographic steering nuggets.
+- **Syntactic Cost Gating (`krusch-pre-router`)**: Sub-15µs CPU heuristic gate that intercepts syntax, SQL, and closed-world tasks for $0.00 before escalating to heavier frontier cascades.
+- **Ecosystem Bridge (`scripts/context-cli.js`)**: Runs a lightweight HTTP bridge daemon on port 3778 to provide CORS-enabled endpoints for the web and desktop clients.
 
 ## 🗺️ Key File Map
 
-| Component / Layer | Location                            | Purpose                                                                                                                                                      |
-| ----------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Orchestration** | `apps/server/src/orchestration/`    | Core DBOS queue polling, command dispatch, Vector Embedding, and local HALO trace optimization background workers.                                           |
-| **Providers**     | `apps/server/src/provider/`         | Universal RAG Context utility and AI Adapters (Claude, Gemini, Codex).                                                                                       |
-| **Persistence**   | `apps/server/src/persistence/`      | `@effect/sql-pg` client implementations and JSONB database schema schemas.                                                                                   |
-| **Connectivity**  | `apps/server/src/http.ts` & `ws.ts` | The API and WebSocket handlers acting as the bridge for thin-client UIs.                                                                                     |
-| **Web UI**        | `apps/web/`                         | React-based frontend thin client.                                                                                                                            |
-| **Desktop App**   | `apps/desktop/`                     | Electron thin client with LAN discovery overrides.                                                                                                           |
-| **Tests**         | `apps/server/integration/`          | End-to-end integration tests using the custom `itLive` wrapper.                                                                                              |
-
-## 🤖 External Agent SDK Integration
-
-Krusch DBOS supports native integrations with custom agent networks. This allows you to build your agent logic in Python, Go, or TypeScript using official SDKs or raw SSE, while utilizing the DBOS web UI for rendering and state tracking.
-
-### The SSE Streaming Contract
-
-To integrate an external agent, configure your server to listen for `POST` requests at your specified endpoint (configured via `EXTERNAL_AGENT_URL` in `.env`).
-
-The DBOS backend will send the following JSON payload:
-```json
-{
-  "taskRequest": "User's prompt goes here."
-}
-```
-
-Your external agent API must respond using **Server-Sent Events (SSE)**. The `AgentExecutionEngine` expects events formatted as:
-```text
-data: {"type": "info", "text": "Initializing agent...\n"}
-
-data: {"type": "content.delta", "text": "Searching vector database...\n"}
-```
-
-**Note:** Ensure your SSE chunk payloads end with `\n\n` to properly signal event completion to the DBOS streaming parsers.
-
-### Example: Node.js SSE Integration
-
-```typescript
-// Define your standard agent workflow or LLM stream
-const logStream = await myAgent.streamEvents({ messages: [taskRequest] });
-
-// Forward events directly to the DBOS UI via SSE
-for await (const event of logStream) {
-  if (event.type === "content") {
-    controller.enqueue(`data: {"type": "content.delta", "text": "${event.data.chunk}\\n"}\n\n`);
-  }
-}
-```
+| Component / Layer | Location | Purpose |
+| ----------------- | -------- | ------- |
+| **Web UI** | `apps/web/` | React 19 frontend thin client with `@pierre/diffs` and chat. |
+| **Desktop App** | `apps/desktop/` | Electron thin client with window management and auto-update plumbing. |
+| **Contracts** | `packages/contracts/` | Typed Effect Schema contracts for commands, events, models, and RPC. |
+| **Shared** | `packages/shared/` | Cross-cutting utilities (shell environment, git, search ranking, settings). |
+| **Client Runtime** | `packages/client-runtime/` | Environment resolution and scoped runtime state. |
+| **Bridge Daemon** | `scripts/context-cli.js` | HTTP & MCP bridge connecting UI to `krusch` and `krusch-context-mcp`. |
+| **Dev Runner** | `scripts/dev-runner.ts` | Multi-target Bun/Turbo runner managing web, desktop, and port allocation. |
 
 ## 🛠️ Common Tasks
 
-- **Updating Configuration**: Adjust environment properties in `.env` (refer to `.env.example`).
-- **Running Tests**: `bun run test` (executes unit tests and integration tests utilizing PostgreSQL).
-- **Adding an AI Provider**: Scaffold a new adapter in `apps/server/src/provider/Layers/` and inject the unified `fetchRAGContext` pipeline for `pgvector` support.
+- **Updating Configuration**: Adjust properties in `.env` (refer to `.env.example`).
+- **Running Tests**: `bun run test` (runs unit tests across workspaces).
+- **Typechecking**: `bun run typecheck` (executes `tsc --noEmit` across packages).
+- **Checking Bridge Health**: `bun run bridge:status` (probes `krusch-context-mcp` and PostgreSQL connectivity).
+- **Linting & Formatting**: `bun run lint` (`oxlint`) and `bun run fmt` (`oxfmt`).
