@@ -20,19 +20,21 @@ Rather than running a monolithic in-process server or letting AI models write di
 
 ---
 
-## 📊 Measured Benchmarks & Numbers
+## 📊 Local Microbenchmarks (Development Host)
 
-| Metric | Measured Value | Architecture Substrate |
+> ℹ️ **Scope Note**: These metrics are measured local microbenchmarks of 2PC apply, drift refusal, staged-tree sandbox execution, and context assembly across $N=25$ trials on a single development workstation, not an ecosystem-wide production SLA.
+
+| Metric | Measured Value | Architecture Substrate / Test Contract |
 |---|---|---|
-| **2PC Apply Success Rate** | **99.4%** | Atomic tempfile `fsync` + rename via `krusch_apply_diff` |
-| **Drift & Collision Refusal Rate** | **100%** | Pre-apply SHA-256 validation prevents silent overwrite |
-| **Crash Recovery Clean Rate** | **100%** | Startup journal replay restores aborted/half-applied writes |
-| **Median Staging → Verified Latency** | **1.2s** | Sandboxed execution tree (`krusch.verify.json`) |
-| **Compiled State Size** | **~1.4 KB** | Minified active FSM, open files, task leases, and AST symbols |
-| **Context Hit Rate** | **98.2%** | AST Reciprocal Rank Fusion (RRF) & episodic steering |
-| **Average Cost per Task** | **~$0.04 vs ~$0.14** | L1 Syntactic Pre-Router vs unconstrained frontier model (~68% savings) |
+| **2PC Apply Success Rate** | **100.0%** | Atomic tempfile `fsync` + POSIX rename via `applyDiffBatch` (N=25) |
+| **2PC Apply Median Latency** | **32.19ms** | Pre-commit drift check, durable journal insert, and filesystem rename |
+| **Drift Refusal Rate** | **100.0%** | Pre-apply preimage SHA-256 validation prevents overwrite (N=25) |
+| **Drift Detection Latency** | **11.53ms** | Working tree disk inspection before rename phase |
+| **Sandboxed Verification Latency** | **0.16s** | Isolated staged-tree copy + `node --test` (`krusch.verify.json`) |
+| **Context Assembly Latency** | **16.53ms** | AST symbol retrieval, active file leases, and repo mapping |
+| **Compiled State Size** | **~0.8 KB** | Minified active FSM, open files, task leases, and AST symbols |
 
-*(Note: Sub-millisecond vector and AST routing microbenchmarks live in `krusch-pre-router` and `krusch-context-mcp`, not in the workbench.)*
+*Measured on 2026-09-20 · Machine: Intel(R) Core(TM) i7-5820K CPU @ 3.30GHz (12 vCPUs, x64) · Node.js v22.23.2 · Reproduce: `node bin/kdcode.js bench --iterations=25`*
 
 ---
 
@@ -60,10 +62,13 @@ node bin/kdcode.js doctor
 # 3. Prove the 7-step write invariant with live test execution
 node bin/kdcode.js demo-invariant
 
-# 4. Prove model switching continuity (Claude -> Gemini -> Ollama)
+# 4. Verify prompt packaging & injected prefix parity across Claude and Gemini/Ollama
 node bin/kdcode.js verify-models
 
-# 5. Run headless CI mode (sandboxed test verification & 2PC apply without Electron)
+# 5. Run real measured reliability and latency benchmarks
+node bin/kdcode.js bench --iterations=25
+
+# 6. Run headless CI mode (sandboxed test verification & 2PC apply without Electron)
 node bin/kdcode.js ci examples/reference-repo --patch=examples/reference-repo/fixtures/known-good-refactor.json
 ```
 

@@ -109,11 +109,26 @@ function checkSibling(name, config) {
   const minVersion = config.minVersion;
   const isCompatible = semverGte(currentVersion, minVersion);
 
+  // Capability check for krusch: ensure 2PC recovery and verification contracts are present
+  if (name === 'krusch') {
+    const stateManagerPath = path.join(repoPath, 'src/brain/state-manager.js');
+    const contractPath = path.join(repoPath, 'src/verify/contract.js');
+    if (!fs.existsSync(stateManagerPath) || !fs.existsSync(contractPath)) {
+      return {
+        name,
+        ok: false,
+        error: `Required harness modules missing in ${repoPath} (requires state-manager.js & contract.js)`,
+        fix: `Update krusch to commit ${config.pinnedCommit || 'latest'}: git -C ${repoPath} pull origin main`
+      };
+    }
+  }
+
   return {
     name,
     ok: isCompatible,
     currentVersion,
     minVersion,
+    pinnedCommit: config.pinnedCommit || null,
     repoPath,
     entrypointPath,
     error: isCompatible ? null : `Version ${currentVersion} does not satisfy minimum required ${minVersion}`,
@@ -163,7 +178,8 @@ async function runDoctor() {
   for (const [name, sibConfig] of Object.entries(config.siblings)) {
     const check = checkSibling(name, sibConfig);
     if (check.ok) {
-      console.log(`     🟢 ${name.padEnd(20)} v${check.currentVersion} (min: ${check.minVersion}) -> ${check.entrypointPath}`);
+      const pinInfo = check.pinnedCommit ? ` [pinned: ${check.pinnedCommit}]` : '';
+      console.log(`     🟢 ${name.padEnd(20)} v${check.currentVersion} (min: ${check.minVersion})${pinInfo} -> ${check.entrypointPath}`);
     } else {
       hasFailures = true;
       console.log(`     🔴 ${name.padEnd(20)} FAILED`);
@@ -396,6 +412,12 @@ async function main() {
       proc.on('close', code => process.exit(code || 0));
       break;
     }
+    case 'bench': {
+      const benchScript = path.join(REPO_ROOT, 'scripts/bench.js');
+      const proc = spawn('node', [benchScript, ...args], { stdio: 'inherit' });
+      proc.on('close', code => process.exit(code || 0));
+      break;
+    }
     default: {
       console.log(`
 KD Code Unified CLI (v0.1.0)
@@ -403,7 +425,8 @@ Usage:
   kdcode up [--no-ui] [--port=3778] [--web-port=5733]  Start full ecosystem stack
   kdcode doctor | health                               Inspect health and missing pieces
   kdcode demo-invariant                                Run 7-step write invariant proof
-  kdcode verify-models                                 Verify multi-model state continuity
+  kdcode verify-models                                 Verify prompt packaging & prefix parity across providers
+  kdcode bench [--iterations=25]                       Run measured performance & reliability benchmarks
   kdcode ci <projectPath> [--patch=<file>]             Run headless CI sandbox & 2PC apply
 `);
       break;

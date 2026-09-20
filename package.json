@@ -35,6 +35,7 @@
     "doctor": "node bin/kdcode.js doctor",
     "demo:invariant": "node bin/kdcode.js demo-invariant",
     "verify:models": "node bin/kdcode.js verify-models",
+    "bench": "node bin/kdcode.js bench",
     "ci": "node bin/kdcode.js ci",
     "dev": "bun scripts/dev-runner.ts dev",
     "dev:web": "bun scripts/dev-runner.ts dev:web",

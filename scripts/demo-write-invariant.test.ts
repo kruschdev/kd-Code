@@ -18,8 +18,10 @@ describe('Write Invariant 7-Step Proof', () => {
     expect(res.status).toBe(0);
     expect(res.stdout).toContain('ALL 7 WRITE INVARIANT CRITERIA VERIFIED & VALIDATED');
     expect(res.stdout).toContain('DISK IS 100% UNCHANGED');
-    expect(res.stdout).toContain('Apply strictly BLOCKED');
+    expect(res.stdout).toContain('Real sandboxed tests failed');
+    expect(res.stdout).toContain('Sandboxed verification PASSED');
     expect(res.stdout).toContain('2PC Apply Journal Record Created');
+    expect(res.stdout).toContain('Worker process terminated (Signal: SIGKILL)');
     expect(res.stdout).toContain('Dangling temporary file successfully cleaned');
     expect(res.stdout).toContain('Apply REFUSED by Pre-Commit Drift Check');
   });

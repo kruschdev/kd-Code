@@ -1,12 +1,12 @@
 {
   "mcpServers": {
-    "homelab-memory": {
+    "krusch-context": {
       "command": "node",
-      "args": ["/home/kruschdev/homelab/scripts/homelab_memory_mcp.js"]
+      "args": ["../krusch-context-mcp/src/index.js"]
     },
-    "krusch-infra": {
+    "krusch-harness": {
       "command": "node",
-      "args": ["/home/kruschdev/homelab/projects/krusch-infra-mcp/server.js"]
+      "args": ["../krusch/bin/krusch.js", "mcp"]
     }
   }
 }

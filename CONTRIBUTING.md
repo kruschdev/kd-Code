@@ -20,14 +20,15 @@ If you encounter any bridge connection drops, PostgreSQL transaction issues, or 
 1. **Fork the repo** and create your feature branch.
 2. **Verify the Invariant**: Run `node bin/kdcode.js demo-invariant` to confirm the 7-step write invariant is preserved.
 3. **Verify Model Continuity**: Run `node bin/kdcode.js verify-models` to confirm zero context loss across provider switches.
-4. **Lint & Typecheck**: Run `bun run lint` and `bun run typecheck`.
+4. **Run Grounded Benchmarks**: Run `node bin/kdcode.js bench` to measure real 2PC and drift latencies.
+5. **Lint & Typecheck**: Run `bun run lint` and `bun run typecheck`.
 
 ## Development Setup
 
 ```bash
 # Clone the repository
-git clone https://github.com/kruschdev/krusch-ide.git
-cd krusch-ide
+git clone https://github.com/kruschdev/kd-Code.git
+cd kd-Code # (or krusch-ide)
 
 # Run ecosystem diagnostics
 node bin/kdcode.js doctor
