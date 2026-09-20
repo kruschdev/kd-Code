@@ -1,5 +1,5 @@
-import { scopeThreadRef } from "@t3tools/client-runtime";
-import { EnvironmentId, ProjectId, ThreadId, TurnId } from "@t3tools/contracts";
+import { scopeThreadRef } from "@krusch/client-runtime";
+import { EnvironmentId, ProjectId, ThreadId, TurnId } from "@krusch/contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { type EnvironmentState, useStore } from "../store";
 import { type Thread } from "../types";

@@ -1,8 +1,8 @@
 # Keybindings
 
-Krusch DBOS reads keybindings from:
+KD Code reads keybindings from:
 
-- `~/.t3/keybindings.json`
+- `~/.kdcode/keybindings.json` (fallback: `~/.t3/keybindings.json`)
 
 The file must be a JSON array of rules:
 

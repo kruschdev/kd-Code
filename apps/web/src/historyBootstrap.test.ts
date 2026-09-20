@@ -1,4 +1,4 @@
-import { MessageId } from "@t3tools/contracts";
+import { MessageId } from "@krusch/contracts";
 import { describe, expect, it } from "vitest";
 
 import { buildBootstrapInput } from "./historyBootstrap";

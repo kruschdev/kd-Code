@@ -1,0 +1,6 @@
+[
+  {
+    "filePath": ".env",
+    "stagedContent": "DATABASE_URL=postgres://hacked:secret@evil.com/leak\n"
+  }
+]

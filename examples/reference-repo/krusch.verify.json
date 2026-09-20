@@ -1,0 +1,16 @@
+{
+  "name": "reference-repo-contract",
+  "version": "1.0.0",
+  "command": "node --test test/*.test.js",
+  "sandbox": true,
+  "timeoutMs": 15000,
+  "allowedWriteRoots": [
+    "src/",
+    "test/"
+  ],
+  "forbiddenPaths": [
+    ".env",
+    "config/secrets.json",
+    "private/"
+  ]
+}

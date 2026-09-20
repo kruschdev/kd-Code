@@ -18,11 +18,11 @@ import {
   type ServerProvider,
   type ServerProviderModel,
   type EmbeddingProviderKind,
-} from "@t3tools/contracts";
-import { scopeThreadRef } from "@t3tools/client-runtime";
-import { DEFAULT_UNIFIED_SETTINGS } from "@t3tools/contracts/settings";
-import { normalizeModelSlug } from "@t3tools/shared/model";
-import { createModelSelection } from "@t3tools/shared/model";
+} from "@krusch/contracts";
+import { scopeThreadRef } from "@krusch/client-runtime";
+import { DEFAULT_UNIFIED_SETTINGS } from "@krusch/contracts/settings";
+import { normalizeModelSlug } from "@krusch/shared/model";
+import { createModelSelection } from "@krusch/shared/model";
 import { Equal } from "effect";
 import { APP_VERSION } from "../../branding";
 import {

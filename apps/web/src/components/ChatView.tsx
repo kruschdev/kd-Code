@@ -19,16 +19,16 @@ import {
   ProviderInteractionMode,
   RuntimeMode,
   TerminalOpenInput,
-} from "@t3tools/contracts";
+} from "@krusch/contracts";
 import {
   parseScopedThreadKey,
   scopedThreadKey,
   scopeProjectRef,
   scopeThreadRef,
-} from "@t3tools/client-runtime";
-import { applyClaudePromptEffortPrefix, createModelSelection } from "@t3tools/shared/model";
-import { projectScriptCwd, projectScriptRuntimeEnv } from "@t3tools/shared/projectScripts";
-import { truncate } from "@t3tools/shared/String";
+} from "@krusch/client-runtime";
+import { applyClaudePromptEffortPrefix, createModelSelection } from "@krusch/shared/model";
+import { projectScriptCwd, projectScriptRuntimeEnv } from "@krusch/shared/projectScripts";
+import { truncate } from "@krusch/shared/String";
 import { Debouncer } from "@tanstack/react-pacer";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
@@ -92,14 +92,24 @@ import {
 import { useTheme } from "../hooks/useTheme";
 import { useTurnDiffSummaries } from "../hooks/useTurnDiffSummaries";
 import { useCommandPaletteStore } from "../commandPaletteStore";
-import { buildTemporaryWorktreeBranchName } from "@t3tools/shared/git";
+import { buildTemporaryWorktreeBranchName } from "@krusch/shared/git";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { RIGHT_PANEL_INLINE_LAYOUT_MEDIA_QUERY } from "../rightPanelLayout";
 import { BranchToolbar } from "./BranchToolbar";
 import { resolveShortcutCommand, shortcutLabelForCommand } from "../keybindings";
 import PlanSidebar from "./PlanSidebar";
 import ThreadTerminalDrawer from "./ThreadTerminalDrawer";
-import { ChevronDownIcon } from "lucide-react";
+import {
+  ChevronDownIcon,
+  MessageSquareIcon,
+  GitCompareIcon,
+  BrainIcon,
+  ShieldCheckIcon,
+  LockIcon,
+  CheckCircle2Icon,
+} from "lucide-react";
+import DiffPanel from "./DiffPanel";
+import { ContextInspectorPanel } from "./ContextInspectorPanel";
 import { cn, randomUUID } from "~/lib/utils";
 import { stackedThreadToast, toastManager } from "./ui/toast";
 import { decodeProjectScriptKeybindingRule } from "~/lib/projectScriptKeybindings";
@@ -624,6 +634,7 @@ export default function ChatView(props: ChatViewProps) {
     select: (params) => parseDiffRouteSearch(params),
   });
   const { resolvedTheme } = useTheme();
+  const [workspaceViewMode, setWorkspaceViewMode] = useState<"thread" | "staged-diff" | "context-inspector">("thread");
   // Granular store selectors — avoid subscribing to prompt changes.
   const composerRuntimeMode = useComposerDraftStore(
     (store) => store.getComposerDraft(composerDraftTarget)?.runtimeMode ?? null,
@@ -3311,125 +3322,223 @@ export default function ChatView(props: ChatViewProps) {
         error={activeThread.error}
         onDismiss={() => setThreadError(activeThread.id, null)}
       />
+      {/* Mode Switcher Bar */}
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/80 bg-muted/20 text-xs">
+        <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-lg border border-border/60">
+          <button
+            type="button"
+            onClick={() => setWorkspaceViewMode("thread")}
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer",
+              workspaceViewMode === "thread"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <MessageSquareIcon className="size-3.5" />
+            <span>Thread</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setWorkspaceViewMode("staged-diff")}
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer",
+              workspaceViewMode === "staged-diff"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <GitCompareIcon className="size-3.5" />
+            <span>Staged Diff (@pierre/diffs)</span>
+            {turnDiffSummaries.length > 0 && (
+              <span className="ml-1 px-1.5 py-0.2 rounded-full bg-primary/20 text-primary text-[10px]">
+                {turnDiffSummaries.length}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setWorkspaceViewMode("context-inspector")}
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer",
+              workspaceViewMode === "context-inspector"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <BrainIcon className="size-3.5" />
+            <span>Context & Model Inspector</span>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <ShieldCheckIcon className="size-3 text-emerald-400" />
+            <span>Write Invariant Active</span>
+          </span>
+        </div>
+      </div>
+
+      {/* Elevated 2PC Approval Queue Bar */}
+      {activePendingApproval && (
+        <div className="flex items-center justify-between px-4 py-2 bg-amber-500/10 border-b border-amber-500/30 text-foreground">
+          <div className="flex items-center gap-3">
+            <span className="px-2 py-0.5 rounded font-semibold text-[10px] uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">
+              APPROVAL GATE (2PC)
+            </span>
+            <span className="text-xs font-medium">
+              Staged modifications verified. Awaiting commit approval.
+            </span>
+            <span className="flex items-center gap-1 text-[11px] text-emerald-400">
+              <CheckCircle2Icon className="size-3" /> Tests Passing
+            </span>
+            <span className="flex items-center gap-1 text-[11px] text-amber-400">
+              <LockIcon className="size-3" /> Leases Active
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setWorkspaceViewMode("staged-diff")}
+              className="px-2.5 py-1 text-xs font-medium rounded border border-border hover:bg-accent transition-colors cursor-pointer"
+            >
+              Inspect Staged Diff
+            </button>
+            <button
+              type="button"
+              onClick={() => void onRespondToApproval(activePendingApproval.requestId, "accept")}
+              className="px-3 py-1 text-xs font-medium rounded bg-emerald-600 hover:bg-emerald-500 text-white transition-colors flex items-center gap-1 shadow-sm cursor-pointer"
+            >
+              <ShieldCheckIcon className="size-3.5" />
+              Approve & 2PC Apply
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main content area with optional plan sidebar */}
       <div className="flex min-h-0 min-w-0 flex-1">
-        {/* Chat column */}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          {/* Messages Wrapper */}
-          <div className="relative flex min-h-0 flex-1 flex-col">
-            {/* Messages — LegendList handles virtualization and scrolling internally */}
-
-            <MessagesTimeline
-              key={activeThread.id}
-              isWorking={isWorking}
-              activeTurnInProgress={isWorking || !latestTurnSettled}
-              activeTurnId={activeLatestTurn?.turnId ?? null}
-              activeTurnStartedAt={activeWorkStartedAt}
-              listRef={legendListRef}
-              timelineEntries={timelineEntries}
-              completionDividerBeforeEntryId={completionDividerBeforeEntryId}
-              completionSummary={completionSummary}
-              turnDiffSummaryByAssistantMessageId={turnDiffSummaryByAssistantMessageId}
-              activeThreadEnvironmentId={activeThread.environmentId}
-              routeThreadKey={routeThreadKey}
-              onOpenTurnDiff={onOpenTurnDiff}
-              revertTurnCountByUserMessageId={revertTurnCountByUserMessageId}
-              onRevertUserMessage={onRevertUserMessage}
-              isRevertingCheckpoint={isRevertingCheckpoint}
-              onImageExpand={onExpandTimelineImage}
-              markdownCwd={gitCwd ?? undefined}
-              resolvedTheme={resolvedTheme}
-              timestampFormat={timestampFormat}
-              workspaceRoot={activeWorkspaceRoot}
-              onIsAtEndChange={onIsAtEndChange}
-            />
-
-            {/* scroll to bottom pill — shown when user has scrolled away from the bottom */}
-            {showScrollToBottom && (
-              <div className="pointer-events-none absolute bottom-1 left-1/2 z-30 flex -translate-x-1/2 justify-center py-1.5">
-                <button
-                  type="button"
-                  onClick={() => scrollToEnd(true)}
-                  className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-3 py-1 text-muted-foreground text-xs shadow-sm transition-colors hover:border-border hover:text-foreground hover:cursor-pointer"
-                >
-                  <ChevronDownIcon className="size-3.5" />
-                  Scroll to bottom
-                </button>
-              </div>
-            )}
+        {workspaceViewMode === "staged-diff" ? (
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background">
+            <DiffPanel mode="inline" />
           </div>
-
-          {/* Input bar */}
-          <div className={cn("px-3 pt-1.5 sm:px-5 sm:pt-2", isGitRepo ? "pb-1" : "pb-3 sm:pb-4")}>
-            <ChatComposer
-              ref={composerRef}
-              composerDraftTarget={composerDraftTarget}
-              environmentId={environmentId}
-              routeKind={routeKind}
-              routeThreadRef={routeThreadRef}
-              draftId={draftId}
-              activeThreadId={activeThreadId}
-              activeThreadEnvironmentId={activeThread?.environmentId}
-              activeThread={activeThread}
-              isServerThread={isServerThread}
-              isLocalDraftThread={isLocalDraftThread}
-              phase={phase}
-              isConnecting={isConnecting}
-              isSendBusy={isSendBusy}
-              isPreparingWorktree={isPreparingWorktree}
-              activePendingApproval={activePendingApproval}
-              pendingApprovals={pendingApprovals}
-              pendingUserInputs={pendingUserInputs}
-              activePendingProgress={activePendingProgress}
-              activePendingResolvedAnswers={activePendingResolvedAnswers}
-              activePendingIsResponding={activePendingIsResponding}
-              activePendingDraftAnswers={activePendingDraftAnswers}
-              activePendingQuestionIndex={activePendingQuestionIndex}
-              respondingRequestIds={respondingRequestIds}
-              showPlanFollowUpPrompt={showPlanFollowUpPrompt}
-              activeProposedPlan={activeProposedPlan}
-              activePlan={activePlan as { turnId?: TurnId } | null}
-              sidebarProposedPlan={sidebarProposedPlan as { turnId?: TurnId } | null}
-              planSidebarLabel={planSidebarLabel}
-              planSidebarOpen={planSidebarOpen}
-              runtimeMode={runtimeMode}
-              interactionMode={interactionMode}
-              lockedProvider={lockedProvider}
-              providerStatuses={providerStatuses as ServerProvider[]}
-              activeProjectDefaultModelSelection={activeProject?.defaultModelSelection}
-              activeThreadModelSelection={activeThread?.modelSelection}
-              activeThreadActivities={activeThread?.activities}
-              resolvedTheme={resolvedTheme}
-              settings={settings}
-              keybindings={keybindings}
-              terminalOpen={Boolean(terminalState.terminalOpen)}
-              gitCwd={gitCwd}
-              promptRef={promptRef}
-              composerImagesRef={composerImagesRef}
-              composerTerminalContextsRef={composerTerminalContextsRef}
-              shouldAutoScrollRef={isAtEndRef}
-              scheduleStickToBottom={scrollToEnd}
-              onSend={onSend}
-              onInterrupt={onInterrupt}
-              onImplementPlanInNewThread={onImplementPlanInNewThread}
-              onRespondToApproval={onRespondToApproval}
-              onSelectActivePendingUserInputOption={onSelectActivePendingUserInputOption}
-              onAdvanceActivePendingUserInput={onAdvanceActivePendingUserInput}
-              onPreviousActivePendingUserInputQuestion={onPreviousActivePendingUserInputQuestion}
-              onChangeActivePendingUserInputCustomAnswer={
-                onChangeActivePendingUserInputCustomAnswer
-              }
-              onProviderModelSelect={onProviderModelSelect}
-              toggleInteractionMode={toggleInteractionMode}
-              handleRuntimeModeChange={handleRuntimeModeChange}
-              handleInteractionModeChange={handleInteractionModeChange}
-              togglePlanSidebar={togglePlanSidebar}
-              focusComposer={focusComposer}
-              scheduleComposerFocus={scheduleComposerFocus}
-              setThreadError={setThreadError}
-              onExpandImage={onExpandTimelineImage}
+        ) : workspaceViewMode === "context-inspector" ? (
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background">
+            <ContextInspectorPanel
+              projectName={activeProject?.name || "krusch-ide"}
+              selectedModel={ctxSelectedModel}
+              selectedProvider={ctxSelectedProvider}
             />
           </div>
+        ) : (
+          /* Chat column */
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            {/* Messages Wrapper */}
+            <div className="relative flex min-h-0 flex-1 flex-col">
+              {/* Messages — LegendList handles virtualization and scrolling internally */}
+
+              <MessagesTimeline
+                key={activeThread.id}
+                isWorking={isWorking}
+                activeTurnInProgress={isWorking || !latestTurnSettled}
+                activeTurnId={activeLatestTurn?.turnId ?? null}
+                activeTurnStartedAt={activeWorkStartedAt}
+                listRef={legendListRef}
+                timelineEntries={timelineEntries}
+                completionDividerBeforeEntryId={completionDividerBeforeEntryId}
+                completionSummary={completionSummary}
+                turnDiffSummaryByAssistantMessageId={turnDiffSummaryByAssistantMessageId}
+                activeThreadEnvironmentId={activeThread.environmentId}
+                routeThreadKey={routeThreadKey}
+                onOpenTurnDiff={onOpenTurnDiff}
+                revertTurnCountByUserMessageId={revertTurnCountByUserMessageId}
+                onRevertUserMessage={onRevertUserMessage}
+                isRevertingCheckpoint={isRevertingCheckpoint}
+                onImageExpand={onExpandTimelineImage}
+                markdownCwd={gitCwd ?? undefined}
+                resolvedTheme={resolvedTheme}
+                timestampFormat={timestampFormat}
+                workspaceRoot={activeWorkspaceRoot}
+                onIsAtEndChange={onIsAtEndChange}
+              />
+
+              {/* scroll to bottom pill — shown when user has scrolled away from the bottom */}
+              {showScrollToBottom && (
+                <div className="pointer-events-none absolute bottom-1 left-1/2 z-30 flex -translate-x-1/2 justify-center py-1.5">
+                  <button
+                    type="button"
+                    onClick={() => scrollToEnd(true)}
+                    className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-3 py-1 text-muted-foreground text-xs shadow-sm transition-colors hover:border-border hover:text-foreground hover:cursor-pointer"
+                  >
+                    <ChevronDownIcon className="size-3.5" />
+                    Scroll to bottom
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Input bar */}
+            <div className={cn("px-3 pt-1.5 sm:px-5 sm:pt-2", isGitRepo ? "pb-1" : "pb-3 sm:pb-4")}>
+              <ChatComposer
+                ref={composerRef}
+                composerDraftTarget={composerDraftTarget}
+                environmentId={environmentId}
+                routeKind={routeKind}
+                routeThreadRef={routeThreadRef}
+                draftId={draftId}
+                isLocalDraftThread={isLocalDraftThread}
+                threadExists={isServerThread}
+                threadStatus={activeThread.status}
+                isBusy={isComposerBusy}
+                isWorking={isWorking}
+                isTerminalFocused={isTerminalFocused(environmentId)}
+                canSend={composerSendState.canSend}
+                sendDisabledReason={composerSendState.disabledReason}
+                isExpanded={isComposerExpanded}
+                onToggleExpanded={toggleComposerExpanded}
+                activePendingApproval={activePendingApproval}
+                activePendingUserInput={activePendingUserInput}
+                activePendingResolvedAnswers={activePendingResolvedAnswers}
+                activePendingProgress={activePendingProgress}
+                activePendingIsResponding={activePendingIsResponding}
+                showPlanFollowUpPrompt={showPlanFollowUpPrompt}
+                activeProjectName={activeProject?.name}
+                activeProjectDefaultModelSelection={activeProject?.defaultModelSelection}
+                activeThreadModelSelection={activeThread?.modelSelection}
+                activeThreadActivities={activeThread?.activities}
+                resolvedTheme={resolvedTheme}
+                settings={settings}
+                keybindings={keybindings}
+                terminalOpen={Boolean(terminalState.terminalOpen)}
+                gitCwd={gitCwd}
+                promptRef={promptRef}
+                composerImagesRef={composerImagesRef}
+                composerTerminalContextsRef={composerTerminalContextsRef}
+                shouldAutoScrollRef={isAtEndRef}
+                scheduleStickToBottom={scrollToEnd}
+                onSend={onSend}
+                onInterrupt={onInterrupt}
+                onImplementPlanInNewThread={onImplementPlanInNewThread}
+                onRespondToApproval={onRespondToApproval}
+                onSelectActivePendingUserInputOption={onSelectActivePendingUserInputOption}
+                onAdvanceActivePendingUserInput={onAdvanceActivePendingUserInput}
+                onPreviousActivePendingUserInputQuestion={onPreviousActivePendingUserInputQuestion}
+                onChangeActivePendingUserInputCustomAnswer={
+                  onChangeActivePendingUserInputCustomAnswer
+                }
+                onProviderModelSelect={onProviderModelSelect}
+                toggleInteractionMode={toggleInteractionMode}
+                handleRuntimeModeChange={handleRuntimeModeChange}
+                handleInteractionModeChange={handleInteractionModeChange}
+                togglePlanSidebar={togglePlanSidebar}
+                focusComposer={focusComposer}
+                scheduleComposerFocus={scheduleComposerFocus}
+                setThreadError={setThreadError}
+                onExpandImage={onExpandTimelineImage}
+              />
+            </div>
+          </div>
+        )}
 
           {isGitRepo && (
             <BranchToolbar

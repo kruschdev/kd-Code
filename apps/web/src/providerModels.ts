@@ -5,13 +5,13 @@ import {
   type ProviderKind,
   type ServerProvider,
   type ServerProviderModel,
-} from "@t3tools/contracts";
+} from "@krusch/contracts";
 import {
   hasEffortLevel,
   normalizeModelSlug,
   resolveContextWindow,
   trimOrNull,
-} from "@t3tools/shared/model";
+} from "@krusch/shared/model";
 
 const EMPTY_CAPABILITIES: ModelCapabilities = {
   reasoningEffortLevels: [],

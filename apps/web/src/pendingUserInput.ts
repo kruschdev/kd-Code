@@ -1,4 +1,4 @@
-import type { UserInputQuestion } from "@t3tools/contracts";
+import type { UserInputQuestion } from "@krusch/contracts";
 
 export interface PendingUserInputDraftAnswer {
   selectedOptionLabels?: string[];

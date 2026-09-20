@@ -7,7 +7,7 @@
  * - Stage 1 / L2 Neural Centroid Escalation (via krusch-context-mcp bridge)
  */
 
-import type { ProviderKind } from "@t3tools/contracts";
+import type { ProviderKind } from "@krusch/contracts";
 
 export interface ResolvedRoute {
   stage: "L1_FAST_PATH" | "L2_NEURAL_CENTROID" | "FALLBACK";

@@ -1,0 +1,6 @@
+[
+  {
+    "filePath": "src/calculator.js",
+    "stagedContent": "/**\n * Hallucinated patch: inverted math logic causing test assertion failure\n */\n\nexport function add(a, b) {\n  return a - b; // BUG: hallucinated minus instead of plus\n}\n\nexport function subtract(a, b) {\n  return a - b;\n}\n\nexport function multiply(a, b) {\n  return a * b;\n}\n\nexport function divide(a, b) {\n  return a / b;\n}\n\nexport function power(base, exp) {\n  return Math.pow(base, exp);\n}\n"
+  }
+]

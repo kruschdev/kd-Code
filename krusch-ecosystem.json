@@ -1,0 +1,48 @@
+{
+  "name": "krusch-ecosystem",
+  "version": "0.1.0",
+  "compatibility": {
+    "kdcode": "0.1.0",
+    "krusch": ">=0.1.0",
+    "krusch-context-mcp": ">=1.6.0",
+    "krusch-pre-router": ">=1.0.0"
+  },
+  "siblings": {
+    "krusch": {
+      "defaultPath": "../krusch",
+      "envVar": "KRUSCH_HARNESS",
+      "entrypoint": "bin/krusch.js",
+      "minVersion": "0.1.0",
+      "repoUrl": "https://github.com/kruschdev/krusch.git"
+    },
+    "krusch-context-mcp": {
+      "defaultPath": "../krusch-context-mcp",
+      "envVar": "KRUSCH_CONTEXT_MCP",
+      "entrypoint": "src/index.js",
+      "minVersion": "1.6.0",
+      "repoUrl": "https://github.com/kruschdev/krusch-context-mcp.git"
+    },
+    "krusch-pre-router": {
+      "defaultPath": "../krusch-pre-router",
+      "envVar": "KRUSCH_PRE_ROUTER",
+      "entrypoint": "dist/index.js",
+      "minVersion": "1.0.0",
+      "repoUrl": "https://github.com/kruschdev/krusch-pre-router.git"
+    }
+  },
+  "services": {
+    "database": {
+      "defaultUrl": "postgresql://kdcode:password@localhost:5432/kdcode",
+      "containerName": "kdcode",
+      "image": "pgvector/pgvector:pg16",
+      "port": 5432
+    },
+    "bridge": {
+      "defaultPort": 3778,
+      "defaultHost": "127.0.0.1"
+    },
+    "web": {
+      "defaultPort": 5733
+    }
+  }
+}

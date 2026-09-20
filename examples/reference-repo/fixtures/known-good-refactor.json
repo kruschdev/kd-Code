@@ -1,0 +1,10 @@
+[
+  {
+    "filePath": "src/calculator.js",
+    "stagedContent": "/**\n * Reference Arithmetic Calculator\n * Used to verify Krusch sandbox contract execution and 2PC atomic apply.\n */\n\nexport function add(a, b) {\n  return a + b;\n}\n\nexport function subtract(a, b) {\n  return a - b;\n}\n\nexport function multiply(a, b) {\n  return a * b;\n}\n\nexport function divide(a, b) {\n  if (b === 0) {\n    throw new Error('Division by zero');\n  }\n  return a / b;\n}\n\nexport function power(base, exp) {\n  return Math.pow(base, exp);\n}\n\nexport function modulo(a, b) {\n  if (b === 0) {\n    throw new Error('Modulo by zero');\n  }\n  return a % b;\n}\n\nexport function clamp(val, min, max) {\n  return Math.min(Math.max(val, min), max);\n}\n"
+  },
+  {
+    "filePath": "test/calculator.test.js",
+    "stagedContent": "import { describe, it } from 'node:test';\nimport assert from 'node:assert/strict';\nimport { add, subtract, multiply, divide, power, modulo, clamp } from '../src/calculator.js';\n\ndescribe('Calculator Operations', () => {\n  it('correctly adds numbers', () => {\n    assert.equal(add(2, 3), 5);\n    assert.equal(add(-5, 5), 0);\n  });\n\n  it('correctly subtracts numbers', () => {\n    assert.equal(subtract(10, 4), 6);\n  });\n\n  it('correctly multiplies numbers', () => {\n    assert.equal(multiply(6, 7), 42);\n  });\n\n  it('correctly divides numbers and guards zero-division', () => {\n    assert.equal(divide(100, 4), 25);\n    assert.throws(() => divide(10, 0), /Division by zero/);\n  });\n\n  it('correctly computes exponentiation', () => {\n    assert.equal(power(2, 8), 256);\n  });\n\n  it('correctly computes modulo and guards zero-division', () => {\n    assert.equal(modulo(14, 3), 2);\n    assert.throws(() => modulo(5, 0), /Modulo by zero/);\n  });\n\n  it('correctly clamps numbers within range', () => {\n    assert.equal(clamp(15, 0, 10), 10);\n    assert.equal(clamp(-5, 0, 10), 0);\n    assert.equal(clamp(7, 0, 10), 7);\n  });\n});\n"
+  }
+]

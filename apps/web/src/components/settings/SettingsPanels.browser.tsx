@@ -11,7 +11,7 @@ import {
   type DesktopUpdateState,
   type LocalApi,
   type ServerConfig,
-} from "@t3tools/contracts";
+} from "@krusch/contracts";
 import { DateTime } from "effect";
 import { page } from "vitest/browser";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

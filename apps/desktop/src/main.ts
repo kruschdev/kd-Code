@@ -44,12 +44,12 @@ import type {
   DesktopUpdateActionResult,
   DesktopUpdateCheckResult,
   DesktopUpdateState,
-} from "@t3tools/contracts";
+} from "@krusch/contracts";
 import { autoUpdater } from "electron-updater";
 
-import type { ContextMenuItem } from "@t3tools/contracts";
-import { RotatingFileSink } from "@t3tools/shared/logging";
-import { parsePersistedServerObservabilitySettings } from "@t3tools/shared/serverSettings";
+import type { ContextMenuItem } from "@krusch/contracts";
+import { RotatingFileSink } from "@krusch/shared/logging";
+import { parsePersistedServerObservabilitySettings } from "@krusch/shared/serverSettings";
 import { DEFAULT_DESKTOP_BACKEND_PORT, resolveDesktopBackendPort } from "./backendPort.ts";
 import {
   DEFAULT_DESKTOP_SETTINGS,

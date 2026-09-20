@@ -1,6 +1,6 @@
 # Remote Access
 
-Use this when you want to connect to a Krusch DBOS server from another device such as a phone, tablet, or separate desktop app.
+Use this when you want to connect to a KD Code instance from another device such as a phone, tablet, or separate desktop app.
 
 ## Recommended Setup
 
@@ -13,8 +13,7 @@ That gives you:
 - less exposure than opening the server to the public internet
 
 > **Network Topology Overview**
-> This document specifically covers the connection between your **Thin Client (Web/Desktop)** and the **Krusch DBOS Server**.
-> Note that if the DBOS Server is routing tasks to external agents (e.g., via the SSE external agent contract), that connection happens purely server-to-server. The Thin Client only ever needs to authenticate with and connect to the DBOS server itself.
+> This document covers remote thin-client connection (Web/Desktop) to your KD Code workspace and bridge daemon.
 
 ## Enabling Network Access
 

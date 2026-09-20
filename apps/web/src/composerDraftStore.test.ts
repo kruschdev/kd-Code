@@ -3,7 +3,7 @@ import {
   scopedThreadKey,
   scopeProjectRef,
   scopeThreadRef,
-} from "@t3tools/client-runtime";
+} from "@krusch/client-runtime";
 import * as Schema from "effect/Schema";
 import {
   EnvironmentId,
@@ -11,7 +11,7 @@ import {
   ThreadId,
   type ModelSelection,
   type ProviderModelOptions,
-} from "@t3tools/contracts";
+} from "@krusch/contracts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {

@@ -3,14 +3,14 @@ import {
   type ModelSelection,
   type ProviderKind,
   type ServerProvider,
-} from "@t3tools/contracts";
+} from "@krusch/contracts";
 import {
   createModelSelection,
   normalizeModelSlug,
   resolveSelectableModel,
-} from "@t3tools/shared/model";
+} from "@krusch/shared/model";
 import { getComposerProviderState } from "./components/chat/composerProviderRegistry";
-import { UnifiedSettings } from "@t3tools/contracts/settings";
+import { UnifiedSettings } from "@krusch/contracts/settings";
 import {
   getDefaultServerModel,
   getProviderModels,

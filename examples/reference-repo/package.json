@@ -1,0 +1,12 @@
+{
+  "name": "reference-repo",
+  "version": "1.0.0",
+  "description": "KD Code & Krusch Reference Verification Repository",
+  "type": "module",
+  "main": "src/calculator.js",
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": ["krusch", "kdcode", "verification", "2pc"],
+  "license": "MIT"
+}

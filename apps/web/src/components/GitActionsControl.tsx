@@ -1,10 +1,10 @@
-import { type ScopedThreadRef } from "@t3tools/contracts";
+import { type ScopedThreadRef } from "@krusch/contracts";
 import type {
   GitActionProgressEvent,
   GitRunStackedActionResult,
   GitStackedAction,
   GitStatusResult,
-} from "@t3tools/contracts";
+} from "@krusch/contracts";
 import { useIsMutating, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { ChevronDownIcon, CloudUploadIcon, GitCommitIcon, InfoIcon } from "lucide-react";

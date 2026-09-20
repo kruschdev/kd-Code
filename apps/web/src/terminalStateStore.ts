@@ -5,8 +5,8 @@
  * API constrained to store actions/selectors.
  */
 
-import { parseScopedThreadKey, scopedThreadKey } from "@t3tools/client-runtime";
-import { type ScopedThreadRef, type TerminalEvent } from "@t3tools/contracts";
+import { parseScopedThreadKey, scopedThreadKey } from "@krusch/client-runtime";
+import { type ScopedThreadRef, type TerminalEvent } from "@krusch/contracts";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { resolveStorage } from "./lib/storage";
