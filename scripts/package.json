@@ -1,5 +1,5 @@
 {
-  "name": "@t3tools/scripts",
+  "name": "@krusch/scripts",
   "private": true,
   "type": "module",
   "scripts": {
