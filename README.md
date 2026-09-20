@@ -42,10 +42,9 @@ Rather than trying to be a monolithic engine that does everything in one process
                ▼                               ▼
 ┌───────────────────────────────┐ ┌───────────────────────────┐
 │     Routing Substrate         │ │   Memory & Context Plane  │
-│ • krusch-pre-router (<15µs)   │ │ • krusch-context-mcp      │
-│ • krusch-cascade-router (L2)  │ │   (Pinned v1.6.3)         │
-│ • OpenRouter / Anthropic /    │ │ • AST symbol graph & RRF  │
-│   Gemini / Ollama adapters    │ │ • Holographic steering    │
+│ • krusch-pre-router           │ │ • krusch-context-mcp      │
+│ • krusch-cascade-router       │ │ • AST symbol graph & RRF  │
+│ • Provider adapters           │ │ • Steering nuggets        │
 └───────────────────────────────┘ └───────────────────────────┘
 ```
 
@@ -57,10 +56,10 @@ Rather than trying to be a monolithic engine that does everything in one process
 |---|---|---|
 | **Workbench, UI, Diff Viewer, Chat, Remote Client** | KD Code | `krusch-ide` (`apps/web`, `apps/desktop`) |
 | **Execution, Staged Diffs, Test Sandboxing, 2PC Apply** | krusch | `krusch` (`bin/krusch.js`, PostgreSQL FSM) |
-| **Fast Syntactic Cost Gating (<15µs)** | krusch-pre-router | `krusch-pre-router` (Stage 0 / L1 gate) |
-| **Model Cascade & Specialist Routing** | krusch-cascade-router | `krusch-cascade-router` (Stage 2 cascade) |
+| **Syntactic Cost Gating** | krusch-pre-router | `krusch-pre-router` (when running alongside) |
+| **Model Cascade & Specialist Routing** | krusch-cascade-router | `krusch-cascade-router` (when running alongside) |
 | **Episodic Memory, AST Symbols, Steering Nuggets** | krusch-context-mcp | `krusch-context-mcp` (v1.6.3 memory plane) |
-| **Ecosystem Bridge Daemon** | KD Bridge | `scripts/context-cli.js serve 3778` |
+| **Ecosystem Bridge Daemon** | KD Bridge | `scripts/context-cli.js serve 3778` (127.0.0.1) |
 
 ---
 
@@ -85,15 +84,16 @@ bun install
 
 ### 3. Start the Ecosystem Bridge Daemon
 
-The bridge daemon connects KD Code to `krusch-context-mcp` (memory/steering) and `krusch-pre-router`:
+The bridge daemon connects KD Code to `krusch-context-mcp` (memory/steering) and `krusch` (staging harness):
 
 ```bash
-bun run bridge
+# Start the loopback HTTP bridge (127.0.0.1:3778)
+node scripts/context-cli.js serve 3778
 ```
 
 To verify connectivity and database health:
 ```bash
-bun run bridge:status
+node scripts/context-cli.js health
 ```
 
 ### 4. Start the KD Code Workbench
@@ -113,11 +113,11 @@ bun run dev:desktop
 
 ## 🧠 The Memory Plane: `krusch-context-mcp`
 
-KD Code does not run a fragile, in-process RAG loop. Instead, all context recall, symbol navigation, and behavioral steering are delegated to the pinned **`krusch-context-mcp`** service (v1.6.3):
+KD Code does not run a fragile, in-process RAG loop. Instead, context recall, symbol navigation, and behavioral steering are delegated to the **`krusch-context-mcp`** service:
 
-- **Zero Context Loss Across Model Switches:** State is compiled from PostgreSQL (`krusch_context_compile_state`), allowing you to switch between Gemini 3.1, Claude 3.7, or local Ollama models with seamless retention of architectural invariants.
-- **AST Symbol Extraction & Reciprocal Rank Fusion (RRF):** Dense vector similarity is combined with AST code symbol extraction to guarantee pinpoint recall of function signatures and type contracts.
-- **Holographic Steering Nuggets:** Prior debugging learnings and negative constraints are indexed and injected as proactive nudges before each turn.
+- **Context Retention Across Model Switches:** State is compiled from PostgreSQL (`krusch_context_compile_state`), allowing you to switch between different LLM providers or local models with seamless retention of architectural invariants.
+- **AST Symbol Extraction & Reciprocal Rank Fusion (RRF):** Dense vector similarity is combined with AST code symbol extraction to provide recall of function signatures and type contracts.
+- **Steering Nuggets:** Prior debugging learnings and negative constraints are indexed and injected as proactive nudges before each turn.
 
 ---
 
@@ -132,14 +132,15 @@ KD Code never mutates physical disk files directly during agent reasoning:
 
 ---
 
-## 🛠️ Configuration
+## 🛠️ Configuration & Sibling Repositories
 
-Configuration is loaded via `.env` (refer to `.env.example`):
+Configuration is loaded via `.env` (refer to `.env.example`). Sibling components are discovered via parent directory convention (`../<repo>`) or explicit environment variables:
 
-- **`DATABASE_URL`**: Primary PostgreSQL connection string (e.g. `postgres://kdcode:password@localhost:5432/kdcode`).
+- **`KRUSCH_CONTEXT_MCP`**: Path to memory MCP service (default: `../krusch-context-mcp/src/index.js`).
+- **`KRUSCH_HARNESS`**: Path to krusch staging engine (default: `../krusch/bin/krusch.js`).
+- **`KRUSCH_PRE_ROUTER`**: Path to pre-router (default: `../krusch-pre-router/dist/index.js`).
+- **`DATABASE_URL`**: Primary PostgreSQL connection string (default: `postgres://kdcode:password@localhost:5432/kdcode`).
 - **`OLLAMA_URL`**: Local inference/embedding server (default: `http://localhost:11434`).
-- **`GEMINI_API_KEY`**: Cloud provider credentials for Gemini models.
-- **`ANTHROPIC_API_KEY`**: Cloud provider credentials for Claude models.
 
 ---
 
