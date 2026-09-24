@@ -72,19 +72,19 @@ async function main() {
     console.log(` - ${t.name}: ${t.description?.slice(0, 70)}...`);
   }
 
-  console.log('\nCalling krusch_context_health_check...');
+  console.log('\nCalling krusch_context_health...');
   const healthRes = await send('tools/call', {
-    name: 'krusch_context_health_check',
+    name: 'krusch_context_health',
     arguments: {}
   });
-  console.log('Health check result:', healthRes.result?.content?.[0]?.text);
+  console.log('Health check result:\n', healthRes.result?.content?.[0]?.text);
 
-  console.log('\nCalling krusch_context_list_semantic_centroids...');
-  const centroidRes = await send('tools/call', {
-    name: 'krusch_context_list_semantic_centroids',
-    arguments: {}
+  console.log('\nCalling krusch_context_retrieve (query: "*")...');
+  const retrieveRes = await send('tools/call', {
+    name: 'krusch_context_retrieve',
+    arguments: { query: '*', limit_tokens: 500 }
   });
-  console.log('Semantic centroids result:', centroidRes.result?.content?.[0]?.text);
+  console.log('Retrieve result snippet:\n', retrieveRes.result?.content?.[0]?.text?.slice(0, 200) + '...');
 
   child.kill('SIGTERM');
   process.exit(0);

@@ -7,6 +7,10 @@
     "krusch-harness": {
       "command": "node",
       "args": ["../krusch/bin/krusch.js", "mcp"]
+    },
+    "krusch-git": {
+      "command": "node",
+      "args": ["../krusch-git/server/mcp.js"]
     }
   }
 }

@@ -139,7 +139,7 @@ async function verifyModelSwitch() {
   console.log('[Step 1] Compiling project state ONCE from PostgreSQL memory plane...');
   let compiledMemoryState = '';
   try {
-    compiledMemoryState = await invokeTool('krusch_context_compile_state', { project: 'krusch-ide' });
+    compiledMemoryState = await invokeTool('krusch_context_retrieve', { query: '*', project: 'krusch-ide', include_state: true });
   } catch (err) {
     console.warn(`  (Memory plane invoke fallback: ${err.message})`);
   }

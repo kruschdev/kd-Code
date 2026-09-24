@@ -388,7 +388,7 @@ export function startBridgeServer(port = 3778, host = process.env.BRIDGE_HOST ||
 
       if (url.pathname === '/api/state' && req.method === 'GET') {
         const project = url.searchParams.get('project') || 'krusch-ide';
-        const out = await invokeTool('krusch_context_compile_state', { project });
+        const out = await invokeTool('krusch_context_retrieve', { query: '*', project, include_state: true });
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ project, stateMarkdown: out }));
         return;
@@ -396,10 +396,10 @@ export function startBridgeServer(port = 3778, host = process.env.BRIDGE_HOST ||
 
       if (url.pathname === '/api/memory' && req.method === 'POST') {
         const body = await readBody();
-        const out = await invokeTool('krusch_context_add_memory', {
+        const out = await invokeTool('krusch_context_remember', {
           project: body.project || 'kdcode',
           content: body.content || body.summary || '',
-          category: body.category || 'lessons'
+          category: body.category || 'lesson'
         });
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ status: 'saved', result: out }));
@@ -408,11 +408,11 @@ export function startBridgeServer(port = 3778, host = process.env.BRIDGE_HOST ||
 
       if (url.pathname === '/api/nudge' && req.method === 'POST') {
         const body = await readBody();
-        const out = await invokeTool('krusch_context_nugget_remember', {
+        const out = await invokeTool('krusch_context_remember', {
           project: body.project || 'kdcode',
           key: body.key || 'kdcode:conventions',
-          value: body.value || body.nudge || '',
-          kind: body.kind || 'project'
+          content: body.value || body.nudge || '',
+          category: 'invariant'
         });
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ status: 'saved', result: out }));
@@ -529,8 +529,10 @@ Commands:
         break;
       }
       case 'state': {
-        const out = await invokeTool('krusch_context_compile_state', {
-          project: args[0] || 'krusch-ide'
+        const out = await invokeTool('krusch_context_retrieve', {
+          query: '*',
+          project: args[0] || 'krusch-ide',
+          include_state: true
         });
         console.log(out);
         break;
@@ -549,9 +551,9 @@ Commands:
           console.error('Usage: remember "<content>" [category] [project]');
           process.exit(1);
         }
-        const out = await invokeTool('krusch_context_add_memory', {
+        const out = await invokeTool('krusch_context_remember', {
           content: args[0],
-          category: args[1] || 'lessons',
+          category: args[1] || 'lesson',
           project: args[2] || 'kdcode'
         });
         console.log(out);
@@ -562,10 +564,10 @@ Commands:
           console.error('Usage: nudge "<nudge_text>" [key] [project]');
           process.exit(1);
         }
-        const out = await invokeTool('krusch_context_nugget_remember', {
+        const out = await invokeTool('krusch_context_remember', {
           key: args[1] || 'kdcode:conventions',
-          value: args[0],
-          kind: 'project',
+          content: args[0],
+          category: 'invariant',
           project: args[2] || 'kdcode'
         });
         console.log(out);
@@ -576,7 +578,7 @@ Commands:
           console.error('Usage: search <query> [project]');
           process.exit(1);
         }
-        const out = await invokeTool('krusch_context_search_code', {
+        const out = await invokeTool('krusch_context_retrieve', {
           query: args[0],
           project: args[1]
         });
@@ -584,20 +586,13 @@ Commands:
         break;
       }
       case 'symbols': {
-        if (!args[0]) {
-          console.error('Usage: symbols <query> [project]');
-          process.exit(1);
-        }
-        const out = await invokeTool('krusch_context_search_symbols', {
-          query: args[0],
-          project: args[1]
-        });
-        console.log(out);
+        console.log('Note: Symbol lookups are handled via Tier 2 krusch-git (krusch_git_search_symbols).');
         break;
       }
       case 'nuggets': {
-        const out = await invokeTool('krusch_context_nugget_nudges', {
-          history: args[0] || '',
+        const out = await invokeTool('krusch_context_nudge', {
+          trigger: 'general',
+          plan: args[0] || '',
           project: args[1] || 'krusch-ide'
         });
         console.log(out);
