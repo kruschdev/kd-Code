@@ -13,8 +13,15 @@
       "envVar": "KRUSCH_HARNESS",
       "entrypoint": "bin/krusch.js",
       "minVersion": "0.1.0",
-      "pinnedCommit": "9cc8e13",
+      "pinnedCommit": "1e69883",
       "repoUrl": "https://github.com/kruschdev/krusch.git"
+    },
+    "krusch-git": {
+      "defaultPath": "../krusch-git",
+      "envVar": "KRUSCH_GIT",
+      "entrypoint": "server/index.js",
+      "minVersion": "1.2.0",
+      "repoUrl": "https://github.com/kruschdev/krusch-git.git"
     },
     "krusch-context-mcp": {
       "defaultPath": "../krusch-context-mcp",

@@ -117,8 +117,46 @@ function checkSibling(name, config) {
       return {
         name,
         ok: false,
-        error: `Required harness modules missing in ${repoPath} (requires state-manager.js & contract.js)`,
-        fix: `Update krusch to commit ${config.pinnedCommit || 'latest'}: git -C ${repoPath} pull origin main`
+        error: `Required harness modules missing in ${path.relative(REPO_ROOT, repoPath)} (requires state-manager.js & contract.js)`,
+        fix: `Update krusch to commit ${config.pinnedCommit || 'latest'}: git -C ${path.relative(REPO_ROOT, repoPath)} pull origin main`
+      };
+    }
+  }
+
+  // Strict git commit pin and clean working tree enforcement
+  if (config.pinnedCommit) {
+    const revProc = spawnSync('git', ['-C', repoPath, 'rev-parse', '--short', 'HEAD'], {
+      encoding: 'utf-8'
+    });
+    if (revProc.status !== 0) {
+      return {
+        name,
+        ok: false,
+        error: `Failed to determine git commit in ${path.relative(REPO_ROOT, repoPath)}`,
+        fix: `Verify git installation and checkout: git -C ${path.relative(REPO_ROOT, repoPath)} rev-parse HEAD`
+      };
+    }
+    const currentCommit = revProc.stdout.trim();
+    if (currentCommit !== config.pinnedCommit) {
+      return {
+        name,
+        ok: false,
+        error: `Pinned commit mismatch: expected ${config.pinnedCommit}, but found ${currentCommit}`,
+        fix: `Checkout pinned commit: git -C ${path.relative(REPO_ROOT, repoPath)} checkout ${config.pinnedCommit}`
+      };
+    }
+
+    // Verify working tree cleanliness (fail if dirty)
+    const statusProc = spawnSync('git', ['-C', repoPath, 'status', '--porcelain'], {
+      encoding: 'utf-8'
+    });
+    if (statusProc.status === 0 && statusProc.stdout.trim().length > 0) {
+      const dirtyCount = statusProc.stdout.trim().split('\n').length;
+      return {
+        name,
+        ok: false,
+        error: `Working tree in ${path.relative(REPO_ROOT, repoPath)} is dirty (${dirtyCount} uncommitted change${dirtyCount === 1 ? '' : 's'})`,
+        fix: `Commit, stash, or reset working tree: git -C ${path.relative(REPO_ROOT, repoPath)} stash`
       };
     }
   }
@@ -132,7 +170,7 @@ function checkSibling(name, config) {
     repoPath,
     entrypointPath,
     error: isCompatible ? null : `Version ${currentVersion} does not satisfy minimum required ${minVersion}`,
-    fix: isCompatible ? null : `Pull latest changes: git -C ${repoPath} pull`
+    fix: isCompatible ? null : `Pull latest changes: git -C ${path.relative(REPO_ROOT, repoPath)} pull`
   };
 }
 
@@ -179,7 +217,8 @@ async function runDoctor() {
     const check = checkSibling(name, sibConfig);
     if (check.ok) {
       const pinInfo = check.pinnedCommit ? ` [pinned: ${check.pinnedCommit}]` : '';
-      console.log(`     🟢 ${name.padEnd(20)} v${check.currentVersion} (min: ${check.minVersion})${pinInfo} -> ${check.entrypointPath}`);
+      const displayPath = path.relative(REPO_ROOT, check.entrypointPath);
+      console.log(`     🟢 ${name.padEnd(20)} v${check.currentVersion} (min: ${check.minVersion})${pinInfo} -> ${displayPath}`);
     } else {
       hasFailures = true;
       console.log(`     🔴 ${name.padEnd(20)} FAILED`);
@@ -291,7 +330,8 @@ async function runUp(options = {}) {
       console.error(`  Action: ${check.fix}\n`);
       process.exit(1);
     }
-    console.log(`  ✓ ${name} (v${check.currentVersion}) -> ${check.entrypointPath}`);
+    const displayPath = path.relative(REPO_ROOT, check.entrypointPath);
+    console.log(`  ✓ ${name} (v${check.currentVersion}) -> ${displayPath}`);
   }
 
   // Step 3: Run Database Migrations
@@ -351,14 +391,22 @@ async function runUp(options = {}) {
   console.log(`🔌 Bridge API:      http://${bridgeHost}:${bridgePort}`);
   console.log(`────────────────────────────────────────────────────────────────────────\n`);
 
-  // Try bun first, then npx vite
-  const hasBun = spawnSync('which', ['bun']).status === 0;
-  const uiCmd = hasBun ? 'bun' : 'npm';
-  const uiArgs = hasBun ? ['run', 'dev:web'] : ['run', 'dev'];
+  const userBun = path.join(os.homedir(), '.bun/bin/bun');
+  const bunPath = fs.existsSync(userBun)
+    ? userBun
+    : (spawnSync('which', ['bun']).status === 0 ? 'bun' : null);
+  const uiCmd = bunPath || 'npm';
+  const uiArgs = ['run', 'dev', '--', '--port', String(webPort)];
 
   const uiProcess = spawn(uiCmd, uiArgs, {
     cwd: path.join(REPO_ROOT, 'apps/web'),
-    stdio: 'inherit'
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      PATH: bunPath && path.isAbsolute(bunPath)
+        ? `${path.dirname(bunPath)}:${process.env.PATH}`
+        : process.env.PATH
+    }
   });
 
   const shutdown = () => {

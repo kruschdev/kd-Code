@@ -71,7 +71,7 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
       Effect.gen(function* () {
         const path = yield* Path.Path;
         const env = yield* createDevRunnerEnv({
-          mode: "dev:server",
+          mode: "dev:web",
           baseEnv: {},
           serverOffset: 0,
           webOffset: 0,
@@ -324,21 +324,6 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
       }),
     );
 
-    it.effect("shifts only server offset for dev:server", () =>
-      Effect.gen(function* () {
-        const taken = new Set([13773]);
-        const offsets = yield* resolveModePortOffsets({
-          mode: "dev:server",
-          startOffset: 0,
-          hasExplicitServerPort: false,
-          hasExplicitDevUrl: false,
-          checkPortAvailability: (port) => Effect.succeed(!taken.has(port)),
-        });
-
-        assert.deepStrictEqual(offsets, { serverOffset: 1, webOffset: 1 });
-      }),
-    );
-
     it.effect("respects explicit dev-url override for dev:web", () =>
       Effect.gen(function* () {
         const offsets = yield* resolveModePortOffsets({
@@ -346,20 +331,6 @@ it.layer(NodeServices.layer)("dev-runner", (it) => {
           startOffset: 0,
           hasExplicitServerPort: false,
           hasExplicitDevUrl: true,
-          checkPortAvailability: () => Effect.succeed(false),
-        });
-
-        assert.deepStrictEqual(offsets, { serverOffset: 0, webOffset: 0 });
-      }),
-    );
-
-    it.effect("respects explicit server port override for dev:server", () =>
-      Effect.gen(function* () {
-        const offsets = yield* resolveModePortOffsets({
-          mode: "dev:server",
-          startOffset: 0,
-          hasExplicitServerPort: true,
-          hasExplicitDevUrl: false,
           checkPortAvailability: () => Effect.succeed(false),
         });
 

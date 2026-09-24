@@ -97,3 +97,84 @@ jobs:
 
       - name: Exercise release-only workflow steps
         run: node scripts/release-smoke.ts
+
+  harness_invariant:
+    name: Write Invariant & CI Fixtures (krusch@1e69883)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: kdcode
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: kdcode
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout kd-Code
+        uses: actions/checkout@v4
+        with:
+          path: kd-Code
+
+      - name: Checkout pinned krusch (1e69883)
+        uses: actions/checkout@v4
+        with:
+          repository: kruschdev/krusch
+          ref: 1e69883
+          path: krusch
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install krusch dependencies
+        run: |
+          cd krusch
+          npm install
+
+      - name: Bootstrap krusch database schema
+        run: |
+          cd krusch
+          node db/migrate.js
+        env:
+          DATABASE_URL: postgres://kdcode:password@localhost:5432/kdcode
+
+      - name: Install kd-Code dependencies
+        run: |
+          cd kd-Code
+          bun install --frozen-lockfile
+
+      - name: Verify Pin Enforcement (kdcode doctor)
+        run: |
+          cd kd-Code
+          node bin/kdcode.js doctor
+        env:
+          DATABASE_URL: postgres://kdcode:password@localhost:5432/kdcode
+          KRUSCH_HARNESS: ../krusch/bin/krusch.js
+
+      - name: Prove 7-Step Write Invariant (demo-invariant)
+        run: |
+          cd kd-Code
+          node bin/kdcode.js demo-invariant
+        env:
+          DATABASE_URL: postgres://kdcode:password@localhost:5432/kdcode
+          KRUSCH_HARNESS: ../krusch/bin/krusch.js
+
+      - name: Run CI Fixture Verifications
+        run: |
+          cd kd-Code
+          node scripts/run-ci-fixtures.js
+        env:
+          DATABASE_URL: postgres://kdcode:password@localhost:5432/kdcode
+          KRUSCH_HARNESS: ../krusch/bin/krusch.js
+

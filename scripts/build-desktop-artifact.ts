@@ -2,7 +2,6 @@
 
 import rootPackageJson from "../package.json" with { type: "json" };
 import desktopPackageJson from "../apps/desktop/package.json" with { type: "json" };
-import serverPackageJson from "../apps/server/package.json" with { type: "json" };
 
 import { BRAND_ASSET_PATHS } from "./lib/brand-assets.ts";
 import { getDefaultBuildArch } from "./lib/build-target-arch.ts";
@@ -554,8 +553,8 @@ export function resolveMockUpdateServerUrl(mockUpdateServerPort: number | undefi
 
 export function resolveDesktopProductName(version: string): string {
   return resolveDesktopUpdateChannel(version) === "nightly"
-    ? "Krusch DBOS (Nightly)"
-    : (desktopPackageJson.productName ?? "Krusch DBOS");
+    ? "KD Code (Nightly)"
+    : (desktopPackageJson.productName ?? "KD Code");
 }
 
 const createBuildConfig = Effect.fn("createBuildConfig")(function* (
@@ -663,12 +662,7 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
 
   const electronVersion = desktopPackageJson.dependencies.electron;
 
-  const serverDependencies = serverPackageJson.dependencies;
-  if (!serverDependencies || Object.keys(serverDependencies).length === 0) {
-    return yield* new BuildScriptError({
-      message: "Could not resolve production dependencies from apps/server/package.json.",
-    });
-  }
+  const serverDependencies: Record<string, string> = {};
 
   const resolvedOverrides = yield* Effect.try({
     try: () =>
@@ -689,11 +683,11 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
       resolveCatalogDependencies(
         serverDependencies,
         rootPackageJson.workspaces.catalog,
-        "apps/server",
+        "apps/desktop",
       ),
     catch: (cause) =>
       new BuildScriptError({
-        message: "Could not resolve production dependencies from apps/server/package.json.",
+        message: "Could not resolve production dependencies.",
         cause,
       }),
   });
@@ -710,7 +704,7 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
       }),
   });
 
-  const appVersion = options.version ?? serverPackageJson.version;
+  const appVersion = options.version ?? rootPackageJson.version;
   const iconAssets = resolveDesktopBuildIconAssets(appVersion);
   const commitHash = yield* resolveGitCommitHash(repoRoot);
   const mkdir = options.keepStage ? fs.makeTempDirectory : fs.makeTempDirectoryScoped;

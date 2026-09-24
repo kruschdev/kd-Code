@@ -158,8 +158,8 @@ export function createDevRunnerEnv({
 
     if (!isDesktopMode) {
       output.T3CODE_PORT = String(serverPort);
-      output.VITE_HTTP_URL = `http://localhost:${serverPort}`;
-      output.VITE_WS_URL = `ws://localhost:${serverPort}`;
+      output.VITE_HTTP_URL = `http://${DESKTOP_DEV_LOOPBACK_HOST}:${serverPort}`;
+      output.VITE_WS_URL = `ws://${DESKTOP_DEV_LOOPBACK_HOST}:${serverPort}`;
     } else {
       output.T3CODE_PORT = String(serverPort);
       output.VITE_HTTP_URL = `http://${DESKTOP_DEV_LOOPBACK_HOST}:${serverPort}`;
@@ -191,12 +191,7 @@ export function createDevRunnerEnv({
       delete output.T3CODE_LOG_WS_EVENTS;
     }
 
-    if (mode === "dev") {
-      output.T3CODE_MODE = "web";
-      delete output.T3CODE_DESKTOP_WS_URL;
-    }
-
-    if (mode === "dev:server" || mode === "dev:web") {
+    if (mode === "dev" || mode === "dev:web") {
       output.T3CODE_MODE = "web";
       delete output.T3CODE_DESKTOP_WS_URL;
     }
@@ -333,20 +328,6 @@ export function resolveModePortOffsets<R = NetService>({
         checkPortAvailability: checkPort,
       });
       return { serverOffset: startOffset, webOffset };
-    }
-
-    if (mode === "dev:server") {
-      if (hasExplicitServerPort) {
-        return { serverOffset: startOffset, webOffset: startOffset };
-      }
-
-      const serverOffset = yield* findFirstAvailableOffset({
-        startOffset,
-        requireServerPort: true,
-        requireWebPort: false,
-        checkPortAvailability: checkPort,
-      });
-      return { serverOffset, webOffset: serverOffset };
     }
 
     const sharedOffset = yield* findFirstAvailableOffset({

@@ -3426,8 +3426,8 @@ export default function ChatView(props: ChatViewProps) {
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background">
             <ContextInspectorPanel
               projectName={activeProject?.name || "krusch-ide"}
-              selectedModel={ctxSelectedModel}
-              selectedProvider={ctxSelectedProvider}
+              selectedModel={activeThread?.modelSelection?.model ?? activeProject?.defaultModelSelection?.model}
+              selectedProvider={selectedProvider}
             />
           </div>
         ) : (
@@ -3486,23 +3486,34 @@ export default function ChatView(props: ChatViewProps) {
                 routeKind={routeKind}
                 routeThreadRef={routeThreadRef}
                 draftId={draftId}
+                activeThreadId={activeThreadId}
+                activeThreadEnvironmentId={activeThread?.environmentId}
+                activeThread={activeThread}
+                isServerThread={isServerThread}
                 isLocalDraftThread={isLocalDraftThread}
-                threadExists={isServerThread}
-                threadStatus={activeThread.status}
-                isBusy={isComposerBusy}
-                isWorking={isWorking}
-                isTerminalFocused={isTerminalFocused(environmentId)}
-                canSend={composerSendState.canSend}
-                sendDisabledReason={composerSendState.disabledReason}
-                isExpanded={isComposerExpanded}
-                onToggleExpanded={toggleComposerExpanded}
+                phase={phase}
+                isConnecting={isConnecting}
+                isSendBusy={isSendBusy}
+                isPreparingWorktree={isPreparingWorktree}
                 activePendingApproval={activePendingApproval}
-                activePendingUserInput={activePendingUserInput}
-                activePendingResolvedAnswers={activePendingResolvedAnswers}
+                pendingApprovals={pendingApprovals}
+                pendingUserInputs={pendingUserInputs}
                 activePendingProgress={activePendingProgress}
+                activePendingResolvedAnswers={activePendingResolvedAnswers}
                 activePendingIsResponding={activePendingIsResponding}
+                activePendingDraftAnswers={activePendingDraftAnswers}
+                activePendingQuestionIndex={activePendingQuestionIndex}
+                respondingRequestIds={respondingRequestIds}
                 showPlanFollowUpPrompt={showPlanFollowUpPrompt}
-                activeProjectName={activeProject?.name}
+                activeProposedPlan={activeProposedPlan}
+                activePlan={activePlan as { turnId?: TurnId } | null}
+                sidebarProposedPlan={sidebarProposedPlan as { turnId?: TurnId } | null}
+                planSidebarLabel={planSidebarLabel}
+                planSidebarOpen={planSidebarOpen}
+                runtimeMode={runtimeMode}
+                interactionMode={interactionMode}
+                lockedProvider={lockedProvider}
+                providerStatuses={providerStatuses as ServerProvider[]}
                 activeProjectDefaultModelSelection={activeProject?.defaultModelSelection}
                 activeThreadModelSelection={activeThread?.modelSelection}
                 activeThreadActivities={activeThread?.activities}
@@ -3537,52 +3548,51 @@ export default function ChatView(props: ChatViewProps) {
                 onExpandImage={onExpandTimelineImage}
               />
             </div>
+
+            {isGitRepo && (
+              <BranchToolbar
+                environmentId={activeThread.environmentId}
+                threadId={activeThread.id}
+                {...(routeKind === "draft" && draftId ? { draftId } : {})}
+                onEnvModeChange={onEnvModeChange}
+                {...(canOverrideServerThreadEnvMode ? { effectiveEnvModeOverride: envMode } : {})}
+                {...(canOverrideServerThreadEnvMode
+                  ? {
+                      activeThreadBranchOverride: activeThreadBranch,
+                      onActiveThreadBranchOverrideChange: setPendingServerThreadBranch,
+                    }
+                  : {})}
+                envLocked={envLocked}
+                onComposerFocusRequest={scheduleComposerFocus}
+                {...(canCheckoutPullRequestIntoThread
+                  ? { onCheckoutPullRequestRequest: openPullRequestDialog }
+                  : {})}
+                {...(hasMultipleEnvironments
+                  ? {
+                      availableEnvironments: logicalProjectEnvironments,
+                      onEnvironmentChange,
+                    }
+                  : {})}
+              />
+            )}
+            {pullRequestDialogState ? (
+              <PullRequestThreadDialog
+                key={pullRequestDialogState.key}
+                open
+                environmentId={activeThread.environmentId}
+                threadId={activeThread.id}
+                cwd={activeProject?.cwd ?? null}
+                initialReference={pullRequestDialogState.initialReference}
+                onOpenChange={(open) => {
+                  if (!open) {
+                    closePullRequestDialog();
+                  }
+                }}
+                onPrepared={handlePreparedPullRequestThread}
+              />
+            ) : null}
           </div>
         )}
-
-          {isGitRepo && (
-            <BranchToolbar
-              environmentId={activeThread.environmentId}
-              threadId={activeThread.id}
-              {...(routeKind === "draft" && draftId ? { draftId } : {})}
-              onEnvModeChange={onEnvModeChange}
-              {...(canOverrideServerThreadEnvMode ? { effectiveEnvModeOverride: envMode } : {})}
-              {...(canOverrideServerThreadEnvMode
-                ? {
-                    activeThreadBranchOverride: activeThreadBranch,
-                    onActiveThreadBranchOverrideChange: setPendingServerThreadBranch,
-                  }
-                : {})}
-              envLocked={envLocked}
-              onComposerFocusRequest={scheduleComposerFocus}
-              {...(canCheckoutPullRequestIntoThread
-                ? { onCheckoutPullRequestRequest: openPullRequestDialog }
-                : {})}
-              {...(hasMultipleEnvironments
-                ? {
-                    availableEnvironments: logicalProjectEnvironments,
-                    onEnvironmentChange,
-                  }
-                : {})}
-            />
-          )}
-          {pullRequestDialogState ? (
-            <PullRequestThreadDialog
-              key={pullRequestDialogState.key}
-              open
-              environmentId={activeThread.environmentId}
-              threadId={activeThread.id}
-              cwd={activeProject?.cwd ?? null}
-              initialReference={pullRequestDialogState.initialReference}
-              onOpenChange={(open) => {
-                if (!open) {
-                  closePullRequestDialog();
-                }
-              }}
-              onPrepared={handlePreparedPullRequestThread}
-            />
-          ) : null}
-        </div>
         {/* end chat column */}
 
         {/* Plan sidebar */}

@@ -19,9 +19,10 @@ If you encounter any bridge connection drops, PostgreSQL transaction issues, or 
 ### Pull Requests
 1. **Fork the repo** and create your feature branch.
 2. **Verify the Invariant**: Run `node bin/kdcode.js demo-invariant` to confirm the 7-step write invariant is preserved.
-3. **Verify Model Continuity**: Run `node bin/kdcode.js verify-models` to confirm zero context loss across provider switches.
-4. **Run Grounded Benchmarks**: Run `node bin/kdcode.js bench` to measure real 2PC and drift latencies.
-5. **Lint & Typecheck**: Run `bun run lint` and `bun run typecheck`.
+3. **Verify Reference Fixtures**: Run `node scripts/run-ci-fixtures.js` to verify test gating and security contracts.
+4. **Verify Model Prefix Parity**: Run `node bin/kdcode.js verify-models` to confirm prompt packaging and prefix parity across provider switches.
+5. **Run Grounded Benchmarks**: Run `node bin/kdcode.js bench` to measure real 2PC and drift latencies.
+6. **Lint & Typecheck**: Run `bun run lint` and `bun run typecheck`.
 
 ## Development Setup
 

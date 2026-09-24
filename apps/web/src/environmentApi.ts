@@ -47,10 +47,11 @@ async function callMcpTool<T>(name: string, args: any): Promise<T> {
     name,
     arguments: args
   });
+  const content = (result as any).content;
   if (result.isError) {
-    throw new Error(`MCP Tool Error: ${result.content[0].text}`);
+    throw new Error(`MCP Tool Error: ${content?.[0]?.text}`);
   }
-  return JSON.parse(result.content[0].text as string) as T;
+  return JSON.parse(content?.[0]?.text as string) as T;
 }
 
 export function createEnvironmentApi(rpcClient: WsRpcClient): EnvironmentApi {
