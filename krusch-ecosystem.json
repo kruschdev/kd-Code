@@ -13,7 +13,7 @@
       "envVar": "KRUSCH_HARNESS",
       "entrypoint": "bin/krusch.js",
       "minVersion": "0.1.0",
-      "pinnedCommit": "1e69883",
+      "pinnedCommit": "e5b16c2",
       "repoUrl": "https://github.com/kruschdev/krusch.git"
     },
     "krusch-git": {

@@ -99,7 +99,7 @@ jobs:
         run: node scripts/release-smoke.ts
 
   harness_invariant:
-    name: Write Invariant & CI Fixtures (krusch@1e69883)
+    name: Write Invariant & CI Fixtures (krusch@e5b16c2)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     services:
@@ -122,11 +122,11 @@ jobs:
         with:
           path: kd-Code
 
-      - name: Checkout pinned krusch (1e69883)
+      - name: Checkout pinned krusch (e5b16c2)
         uses: actions/checkout@v4
         with:
           repository: kruschdev/krusch
-          ref: 1e69883
+          ref: e5b16c2
           path: krusch
 
       - name: Setup Node
