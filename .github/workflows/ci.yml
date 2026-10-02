@@ -158,6 +158,8 @@ jobs:
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: kd-Code/package.json
 
       - name: Install krusch dependencies
         run: |
@@ -174,7 +176,7 @@ jobs:
       - name: Install kd-Code dependencies
         run: |
           cd kd-Code
-          bun install --frozen-lockfile
+          bun install --frozen-lockfile --ignore-scripts
 
       - name: Verify Pin Enforcement (kdcode doctor)
         run: |
