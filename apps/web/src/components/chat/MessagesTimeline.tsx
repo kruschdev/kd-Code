@@ -181,8 +181,9 @@ export const MessagesTimeline = memo(function MessagesTimeline({
     }
 
     onIsAtEndChange(true);
+    const animated = previousRowCount > 0;
     const frameId = window.requestAnimationFrame(() => {
-      void listRef.current?.scrollToEnd?.({ animated: true });
+      void listRef.current?.scrollToEnd?.({ animated });
     });
     return () => {
       window.cancelAnimationFrame(frameId);

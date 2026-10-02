@@ -112,23 +112,27 @@ export function getAppModelOptions(
   provider: ProviderKind,
   selectedModel?: string | null,
 ): AppModelOption[] {
-  const options: AppModelOption[] = [
-    {
-      slug: "auto:cascade",
-      name: "Auto (Cascade Router)",
-      shortName: "Auto",
-      isCustom: false,
-    },
-    ...getProviderModels(providers, provider).map(
-      ({ slug, name, shortName, subProvider, isCustom }) => ({
-        slug,
-        name,
-        ...(shortName ? { shortName } : {}),
-        ...(subProvider ? { subProvider } : {}),
-        isCustom,
-      }),
-    ),
-  ];
+  const providerModels = getProviderModels(providers, provider).map(
+    ({ slug, name, shortName, subProvider, isCustom }) => ({
+      slug,
+      name,
+      ...(shortName ? { shortName } : {}),
+      ...(subProvider ? { subProvider } : {}),
+      isCustom,
+    }),
+  );
+  const options: AppModelOption[] =
+    selectedModel === "auto:cascade" || selectedModel === "auto"
+      ? [
+          {
+            slug: "auto:cascade",
+            name: "Auto (Cascade Router)",
+            shortName: "Auto",
+            isCustom: false,
+          },
+          ...providerModels,
+        ]
+      : providerModels;
   const seen = new Set(options.map((option) => option.slug));
   const trimmedSelectedModel = selectedModel?.trim().toLowerCase();
   const builtInModelSlugs = new Set(
