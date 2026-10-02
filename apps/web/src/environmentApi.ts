@@ -45,7 +45,7 @@ async function callMcpTool<T>(name: string, args: any): Promise<T> {
   const mcpClient = await getOrCreateMcpClient("http://localhost:3773/mcp/sse");
   const result = await mcpClient.callTool({
     name,
-    arguments: args
+    arguments: args,
   });
   const content = (result as any).content;
   if (result.isError) {
@@ -221,7 +221,9 @@ export function createEnvironmentApi(rpcClient: WsRpcClient): EnvironmentApi {
           return await callMcpTool("orchestration_get_turn_diff", input);
         } catch (error) {
           try {
-            const res = await fetch(`${BRIDGE_URL}/api/harness/diff?taskId=${encodeURIComponent((input as any).threadId || "")}`);
+            const res = await fetch(
+              `${BRIDGE_URL}/api/harness/diff?taskId=${encodeURIComponent((input as any).threadId || "")}`,
+            );
             if (res.ok) {
               const data = await res.json();
               if (data.diffs) {
@@ -238,7 +240,9 @@ export function createEnvironmentApi(rpcClient: WsRpcClient): EnvironmentApi {
           return await callMcpTool("orchestration_get_full_thread_diff", input);
         } catch (error) {
           try {
-            const res = await fetch(`${BRIDGE_URL}/api/harness/diff?taskId=${encodeURIComponent((input as any).threadId || "")}`);
+            const res = await fetch(
+              `${BRIDGE_URL}/api/harness/diff?taskId=${encodeURIComponent((input as any).threadId || "")}`,
+            );
             if (res.ok) {
               const data = await res.json();
               if (data.diffs) {

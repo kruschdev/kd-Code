@@ -15,7 +15,9 @@ export interface ProjectStateResponse {
  * Fetch the latest compiled project state (priorities, lessons, outcomes, nudges)
  * from the Postgres memory plane.
  */
-export async function fetchProjectState(projectName: string = "krusch-ide"): Promise<string | null> {
+export async function fetchProjectState(
+  projectName: string = "krusch-ide",
+): Promise<string | null> {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3000);

@@ -3,7 +3,7 @@
 /**
  * @file bin/kdcode.js
  * Unified single-command launcher and diagnostics control plane for KD Code.
- * 
+ *
  * Commands:
  *   kdcode up                Start Postgres, bridge, harness, memory, and UI
  *   kdcode doctor | health   Detailed healthcheck with actionable missing-piece reports
@@ -12,22 +12,22 @@
  *   kdcode ci [projectPath]  Headless CI mode (staging + verify + 2PC apply)
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { spawn, spawnSync } from 'node:child_process';
-import net from 'node:net';
-import { fileURLToPath } from 'node:url';
+import fs from "node:fs";
+import path from "node:path";
+import { spawn, spawnSync } from "node:child_process";
+import net from "node:net";
+import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const REPO_ROOT = path.resolve(__dirname, '..');
-const ECOSYSTEM_CONFIG_PATH = path.join(REPO_ROOT, 'krusch-ecosystem.json');
+const REPO_ROOT = path.resolve(__dirname, "..");
+const ECOSYSTEM_CONFIG_PATH = path.join(REPO_ROOT, "krusch-ecosystem.json");
 
 function loadEcosystemConfig() {
   if (!fs.existsSync(ECOSYSTEM_CONFIG_PATH)) {
     throw new Error(`Missing ecosystem configuration at ${ECOSYSTEM_CONFIG_PATH}`);
   }
-  return JSON.parse(fs.readFileSync(ECOSYSTEM_CONFIG_PATH, 'utf-8'));
+  return JSON.parse(fs.readFileSync(ECOSYSTEM_CONFIG_PATH, "utf-8"));
 }
 
 /**
@@ -47,9 +47,9 @@ function probeTcp(host, port, timeoutMs = 2000) {
     };
 
     socket.setTimeout(timeoutMs);
-    socket.once('connect', () => finish(true));
-    socket.once('timeout', () => finish(false));
-    socket.once('error', () => finish(false));
+    socket.once("connect", () => finish(true));
+    socket.once("timeout", () => finish(false));
+    socket.once("error", () => finish(false));
     socket.connect(port, host);
   });
 }
@@ -68,7 +68,7 @@ function checkSibling(name, config) {
         name,
         ok: false,
         error: `Configured ${envVar}="${process.env[envVar]}" does not exist on disk.`,
-        fix: `Update ${envVar} or remove it to use default path: ${config.defaultPath}`
+        fix: `Update ${envVar} or remove it to use default path: ${config.defaultPath}`,
       };
     }
   } else {
@@ -80,7 +80,7 @@ function checkSibling(name, config) {
       name,
       ok: false,
       error: `Repository directory not found at: ${repoPath}`,
-      fix: `Clone repository: git clone ${config.repoUrl} ${repoPath}`
+      fix: `Clone repository: git clone ${config.repoUrl} ${repoPath}`,
     };
   }
 
@@ -91,17 +91,17 @@ function checkSibling(name, config) {
       name,
       ok: false,
       error: `Entrypoint '${config.entrypoint}' missing in ${repoPath}`,
-      fix: `Ensure repository is built or subpath is valid: ls -la ${repoPath}`
+      fix: `Ensure repository is built or subpath is valid: ls -la ${repoPath}`,
     };
   }
 
   // Check version in package.json
-  const pkgPath = path.join(repoPath, 'package.json');
-  let currentVersion = 'unknown';
+  const pkgPath = path.join(repoPath, "package.json");
+  let currentVersion = "unknown";
   if (fs.existsSync(pkgPath)) {
     try {
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-      currentVersion = pkg.version || 'unknown';
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
+      currentVersion = pkg.version || "unknown";
     } catch (_) {}
   }
 
@@ -110,53 +110,56 @@ function checkSibling(name, config) {
   const isCompatible = semverGte(currentVersion, minVersion);
 
   // Capability check for krusch: ensure 2PC recovery and verification contracts are present
-  if (name === 'krusch') {
-    const stateManagerPath = path.join(repoPath, 'src/brain/state-manager.js');
-    const contractPath = path.join(repoPath, 'src/verify/contract.js');
+  if (name === "krusch") {
+    const stateManagerPath = path.join(repoPath, "src/brain/state-manager.js");
+    const contractPath = path.join(repoPath, "src/verify/contract.js");
     if (!fs.existsSync(stateManagerPath) || !fs.existsSync(contractPath)) {
       return {
         name,
         ok: false,
         error: `Required harness modules missing in ${path.relative(REPO_ROOT, repoPath)} (requires state-manager.js & contract.js)`,
-        fix: `Update krusch to commit ${config.pinnedCommit || 'latest'}: git -C ${path.relative(REPO_ROOT, repoPath)} pull origin main`
+        fix: `Update krusch to commit ${config.pinnedCommit || "latest"}: git -C ${path.relative(REPO_ROOT, repoPath)} pull origin main`,
       };
     }
   }
 
   // Strict git commit pin and clean working tree enforcement
   if (config.pinnedCommit) {
-    const revProc = spawnSync('git', ['-C', repoPath, 'rev-parse', '--short', 'HEAD'], {
-      encoding: 'utf-8'
+    const fullProc = spawnSync("git", ["-C", repoPath, "rev-parse", "HEAD"], {
+      encoding: "utf-8",
     });
-    if (revProc.status !== 0) {
+    if (fullProc.status !== 0) {
       return {
         name,
         ok: false,
         error: `Failed to determine git commit in ${path.relative(REPO_ROOT, repoPath)}`,
-        fix: `Verify git installation and checkout: git -C ${path.relative(REPO_ROOT, repoPath)} rev-parse HEAD`
+        fix: `Verify git installation and checkout: git -C ${path.relative(REPO_ROOT, repoPath)} rev-parse HEAD`,
       };
     }
-    const currentCommit = revProc.stdout.trim();
-    if (currentCommit !== config.pinnedCommit) {
+    const currentCommit = fullProc.stdout.trim();
+    const shortCommit = currentCommit.slice(0, 7);
+    const matches =
+      currentCommit.startsWith(config.pinnedCommit) || config.pinnedCommit.startsWith(shortCommit);
+    if (!matches) {
       return {
         name,
         ok: false,
-        error: `Pinned commit mismatch: expected ${config.pinnedCommit}, but found ${currentCommit}`,
-        fix: `Checkout pinned commit: git -C ${path.relative(REPO_ROOT, repoPath)} checkout ${config.pinnedCommit}`
+        error: `Pinned commit mismatch: expected ${config.pinnedCommit}, but found ${shortCommit}`,
+        fix: `Checkout pinned commit: git -C ${path.relative(REPO_ROOT, repoPath)} checkout ${config.pinnedCommit}`,
       };
     }
 
     // Verify working tree cleanliness (fail if dirty)
-    const statusProc = spawnSync('git', ['-C', repoPath, 'status', '--porcelain'], {
-      encoding: 'utf-8'
+    const statusProc = spawnSync("git", ["-C", repoPath, "status", "--porcelain"], {
+      encoding: "utf-8",
     });
     if (statusProc.status === 0 && statusProc.stdout.trim().length > 0) {
-      const dirtyCount = statusProc.stdout.trim().split('\n').length;
+      const dirtyCount = statusProc.stdout.trim().split("\n").length;
       return {
         name,
         ok: false,
-        error: `Working tree in ${path.relative(REPO_ROOT, repoPath)} is dirty (${dirtyCount} uncommitted change${dirtyCount === 1 ? '' : 's'})`,
-        fix: `Commit, stash, or reset working tree: git -C ${path.relative(REPO_ROOT, repoPath)} stash`
+        error: `Working tree in ${path.relative(REPO_ROOT, repoPath)} is dirty (${dirtyCount} uncommitted change${dirtyCount === 1 ? "" : "s"})`,
+        fix: `Commit, stash, or reset working tree: git -C ${path.relative(REPO_ROOT, repoPath)} stash`,
       };
     }
   }
@@ -169,15 +172,25 @@ function checkSibling(name, config) {
     pinnedCommit: config.pinnedCommit || null,
     repoPath,
     entrypointPath,
-    error: isCompatible ? null : `Version ${currentVersion} does not satisfy minimum required ${minVersion}`,
-    fix: isCompatible ? null : `Pull latest changes: git -C ${path.relative(REPO_ROOT, repoPath)} pull`
+    error: isCompatible
+      ? null
+      : `Version ${currentVersion} does not satisfy minimum required ${minVersion}`,
+    fix: isCompatible
+      ? null
+      : `Pull latest changes: git -C ${path.relative(REPO_ROOT, repoPath)} pull`,
   };
 }
 
 function semverGte(current, target) {
-  if (current === 'unknown' || !current) return true; // graceful allow if unversioned dev checkout
-  const cParts = current.replace(/^[^\d]*/, '').split('.').map(n => parseInt(n, 10) || 0);
-  const tParts = target.replace(/^[^\d]*/, '').split('.').map(n => parseInt(n, 10) || 0);
+  if (current === "unknown" || !current) return true; // graceful allow if unversioned dev checkout
+  const cParts = current
+    .replace(/^[^\d]*/, "")
+    .split(".")
+    .map((n) => parseInt(n, 10) || 0);
+  const tParts = target
+    .replace(/^[^\d]*/, "")
+    .split(".")
+    .map((n) => parseInt(n, 10) || 0);
   for (let i = 0; i < 3; i++) {
     const c = cParts[i] || 0;
     const t = tParts[i] || 0;
@@ -191,16 +204,16 @@ function semverGte(current, target) {
  * Command: kdcode doctor / health
  */
 async function runDoctor() {
-  console.log('────────────────────────────────────────────────────────────────────────');
-  console.log('🩺 KD CODE ECOSYSTEM DOCTOR & DIAGNOSTIC PROBE');
-  console.log('────────────────────────────────────────────────────────────────────────\n');
+  console.log("────────────────────────────────────────────────────────────────────────");
+  console.log("🩺 KD CODE ECOSYSTEM DOCTOR & DIAGNOSTIC PROBE");
+  console.log("────────────────────────────────────────────────────────────────────────\n");
 
   const config = loadEcosystemConfig();
   let hasFailures = false;
 
   // 1. PostgreSQL Persistence Substrate
-  const dbHost = process.env.DB_HOST || '127.0.0.1';
-  const dbPort = parseInt(process.env.DB_PORT || '5432', 10);
+  const dbHost = process.env.DB_HOST || "127.0.0.1";
+  const dbPort = parseInt(process.env.DB_PORT || "5432", 10);
   const dbUp = await probeTcp(dbHost, dbPort, 2500);
 
   if (dbUp) {
@@ -208,17 +221,21 @@ async function runDoctor() {
   } else {
     hasFailures = true;
     console.log(`  🔴 PostgreSQL Database: Unreachable (${dbHost}:${dbPort})`);
-    console.log(`     Fix: Start container with 'docker compose up -d db' or verify PostgreSQL is running.`);
+    console.log(
+      `     Fix: Start container with 'docker compose up -d db' or verify PostgreSQL is running.`,
+    );
   }
 
   // 2. Sibling Repositories & Version Pin Verification
-  console.log('\n  📦 Ecosystem Sibling Dependencies:');
+  console.log("\n  📦 Ecosystem Sibling Dependencies:");
   for (const [name, sibConfig] of Object.entries(config.siblings)) {
     const check = checkSibling(name, sibConfig);
     if (check.ok) {
-      const pinInfo = check.pinnedCommit ? ` [pinned: ${check.pinnedCommit}]` : '';
+      const pinInfo = check.pinnedCommit ? ` [pinned: ${check.pinnedCommit}]` : "";
       const displayPath = path.relative(REPO_ROOT, check.entrypointPath);
-      console.log(`     🟢 ${name.padEnd(20)} v${check.currentVersion} (min: ${check.minVersion})${pinInfo} -> ${displayPath}`);
+      console.log(
+        `     🟢 ${name.padEnd(20)} v${check.currentVersion} (min: ${check.minVersion})${pinInfo} -> ${displayPath}`,
+      );
     } else {
       hasFailures = true;
       console.log(`     🔴 ${name.padEnd(20)} FAILED`);
@@ -242,35 +259,47 @@ async function runDoctor() {
       }
     } catch (_) {}
   } else {
-    console.log(`\n  ⚪ Bridge Daemon: Not running on port ${bridgePort} (Start with: node bin/kdcode.js up)`);
+    console.log(
+      `\n  ⚪ Bridge Daemon: Not running on port ${bridgePort} (Start with: node bin/kdcode.js up)`,
+    );
   }
 
   // 4. Memory Plane Health via CLI
-  console.log('\n  🧠 Memory & Staging Substrates:');
+  console.log("\n  🧠 Memory & Staging Substrates:");
   try {
-    const healthProc = spawnSync('node', ['scripts/context-cli.js', 'health'], {
+    const healthProc = spawnSync("node", ["scripts/context-cli.js", "health"], {
       cwd: REPO_ROOT,
-      encoding: 'utf-8',
-      timeout: 10000
+      encoding: "utf-8",
+      timeout: 10000,
     });
     if (healthProc.status === 0) {
-      const lines = healthProc.stdout.split('\n').filter(l => l.includes('Server is healthy') || l.includes('Vector Dimensions') || l.includes('Episodic memories') || l.includes('Extracted symbols'));
+      const lines = healthProc.stdout
+        .split("\n")
+        .filter(
+          (l) =>
+            l.includes("Server is healthy") ||
+            l.includes("Vector Dimensions") ||
+            l.includes("Episodic memories") ||
+            l.includes("Extracted symbols"),
+        );
       for (const line of lines) {
         console.log(`     ${line.trim()}`);
       }
     } else {
-      console.log(`     ⚠️ Memory check returned non-zero status: ${(healthProc.stderr || healthProc.stdout).trim()}`);
+      console.log(
+        `     ⚠️ Memory check returned non-zero status: ${(healthProc.stderr || healthProc.stdout).trim()}`,
+      );
     }
   } catch (err) {
     console.log(`     ⚠️ Memory check error: ${err.message}`);
   }
 
-  console.log('\n────────────────────────────────────────────────────────────────────────');
+  console.log("\n────────────────────────────────────────────────────────────────────────");
   if (hasFailures) {
-    console.log('❌ Doctor found issues requiring attention before running tasks.');
+    console.log("❌ Doctor found issues requiring attention before running tasks.");
     process.exit(1);
   } else {
-    console.log('✅ Ecosystem is fully healthy, verified, and operational.');
+    console.log("✅ Ecosystem is fully healthy, verified, and operational.");
     process.exit(0);
   }
 }
@@ -279,49 +308,51 @@ async function runDoctor() {
  * Command: kdcode up
  */
 async function runUp(options = {}) {
-  console.log('────────────────────────────────────────────────────────────────────────');
-  console.log('🚀 BOOTING KD CODE DEVELOPMENT WORKBENCH');
-  console.log('────────────────────────────────────────────────────────────────────────\n');
+  console.log("────────────────────────────────────────────────────────────────────────");
+  console.log("🚀 BOOTING KD CODE DEVELOPMENT WORKBENCH");
+  console.log("────────────────────────────────────────────────────────────────────────\n");
 
   const config = loadEcosystemConfig();
 
   // Step 1: Ensure PostgreSQL is running
-  const dbHost = process.env.DB_HOST || '127.0.0.1';
-  const dbPort = parseInt(process.env.DB_PORT || '5432', 10);
+  const dbHost = process.env.DB_HOST || "127.0.0.1";
+  const dbPort = parseInt(process.env.DB_PORT || "5432", 10);
   let dbUp = await probeTcp(dbHost, dbPort, 2000);
 
   if (!dbUp && !options.skipDb) {
     console.log(`[Step 1] PostgreSQL is down on ${dbHost}:${dbPort}. Attempting Docker startup...`);
-    const composeUp = spawnSync('docker', ['compose', 'up', '-d', 'db'], {
+    const composeUp = spawnSync("docker", ["compose", "up", "-d", "db"], {
       cwd: REPO_ROOT,
-      stdio: 'inherit'
+      stdio: "inherit",
     });
 
     if (composeUp.status !== 0) {
-      console.error('\n✗ Failed to launch PostgreSQL container via docker compose.');
-      console.error('  Please ensure Docker is running, or start PostgreSQL manually on port 5432.');
+      console.error("\n✗ Failed to launch PostgreSQL container via docker compose.");
+      console.error(
+        "  Please ensure Docker is running, or start PostgreSQL manually on port 5432.",
+      );
       process.exit(1);
     }
 
-    process.stdout.write('  Waiting for PostgreSQL readiness... ');
+    process.stdout.write("  Waiting for PostgreSQL readiness... ");
     for (let i = 0; i < 15; i++) {
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise((r) => setTimeout(r, 1000));
       dbUp = await probeTcp(dbHost, dbPort, 1000);
       if (dbUp) break;
-      process.stdout.write('.');
+      process.stdout.write(".");
     }
 
     if (!dbUp) {
-      console.log('\n✗ PostgreSQL failed to become reachable within 15 seconds.');
+      console.log("\n✗ PostgreSQL failed to become reachable within 15 seconds.");
       process.exit(1);
     }
-    console.log(' CONNECTED!');
+    console.log(" CONNECTED!");
   } else {
     console.log(`[Step 1] PostgreSQL is reachable at ${dbHost}:${dbPort}.`);
   }
 
   // Step 2: Validate Siblings
-  console.log('\n[Step 2] Validating sibling repositories & version compatibility...');
+  console.log("\n[Step 2] Validating sibling repositories & version compatibility...");
   for (const [name, sibConfig] of Object.entries(config.siblings)) {
     const check = checkSibling(name, sibConfig);
     if (!check.ok) {
@@ -335,16 +366,16 @@ async function runUp(options = {}) {
   }
 
   // Step 3: Run Database Migrations
-  console.log('\n[Step 3] Verifying database schema & running migrations...');
-  const migProc = spawnSync('node', ['../krusch/bin/krusch.js', 'init'], {
+  console.log("\n[Step 3] Verifying database schema & running migrations...");
+  const migProc = spawnSync("node", ["../krusch/bin/krusch.js", "init"], {
     cwd: REPO_ROOT,
-    encoding: 'utf-8',
-    timeout: 15000
+    encoding: "utf-8",
+    timeout: 15000,
   });
   if (migProc.status === 0) {
-    console.log('  ✓ Krusch harness & context tables initialized.');
+    console.log("  ✓ Krusch harness & context tables initialized.");
   } else {
-    console.warn('  ⚠️ Migration warning:\n' + (migProc.stderr || migProc.stdout));
+    console.warn("  ⚠️ Migration warning:\n" + (migProc.stderr || migProc.stdout));
   }
 
   // Step 4: Launch Bridge Daemon
@@ -356,22 +387,22 @@ async function runUp(options = {}) {
     console.log(`\n[Step 4] Bridge Daemon is already active on http://${bridgeHost}:${bridgePort}`);
   } else {
     console.log(`\n[Step 4] Starting Bridge Daemon on http://${bridgeHost}:${bridgePort}...`);
-    const bridgeProcess = spawn('node', ['scripts/context-cli.js', 'serve', String(bridgePort)], {
+    const bridgeProcess = spawn("node", ["scripts/context-cli.js", "serve", String(bridgePort)], {
       cwd: REPO_ROOT,
-      stdio: ['ignore', 'inherit', 'inherit'],
-      detached: false
+      stdio: ["ignore", "inherit", "inherit"],
+      detached: false,
     });
 
     // Wait for bridge to come alive
     let bridgeAlive = false;
     for (let i = 0; i < 10; i++) {
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 500));
       bridgeAlive = await probeTcp(bridgeHost, bridgePort, 800);
       if (bridgeAlive) break;
     }
 
     if (!bridgeAlive) {
-      console.error('✗ Bridge daemon failed to start within timeout.');
+      console.error("✗ Bridge daemon failed to start within timeout.");
       bridgeProcess.kill();
       process.exit(1);
     }
@@ -380,7 +411,7 @@ async function runUp(options = {}) {
 
   // Step 5: Web UI Launch
   if (options.noUi) {
-    console.log('\n✓ KD Code ecosystem backend is running (UI skipped via --no-ui).');
+    console.log("\n✓ KD Code ecosystem backend is running (UI skipped via --no-ui).");
     return;
   }
 
@@ -391,79 +422,85 @@ async function runUp(options = {}) {
   console.log(`🔌 Bridge API:      http://${bridgeHost}:${bridgePort}`);
   console.log(`────────────────────────────────────────────────────────────────────────\n`);
 
-  const userBun = path.join(os.homedir(), '.bun/bin/bun');
+  const userBun = path.join(os.homedir(), ".bun/bin/bun");
   const bunPath = fs.existsSync(userBun)
     ? userBun
-    : (spawnSync('which', ['bun']).status === 0 ? 'bun' : null);
-  const uiCmd = bunPath || 'npm';
-  const uiArgs = ['run', 'dev', '--', '--port', String(webPort)];
+    : spawnSync("which", ["bun"]).status === 0
+      ? "bun"
+      : null;
+  const uiCmd = bunPath || "npm";
+  const uiArgs = ["run", "dev", "--", "--port", String(webPort)];
 
   const uiProcess = spawn(uiCmd, uiArgs, {
-    cwd: path.join(REPO_ROOT, 'apps/web'),
-    stdio: 'inherit',
+    cwd: path.join(REPO_ROOT, "apps/web"),
+    stdio: "inherit",
     env: {
       ...process.env,
-      PATH: bunPath && path.isAbsolute(bunPath)
-        ? `${path.dirname(bunPath)}:${process.env.PATH}`
-        : process.env.PATH
-    }
+      PATH:
+        bunPath && path.isAbsolute(bunPath)
+          ? `${path.dirname(bunPath)}:${process.env.PATH}`
+          : process.env.PATH,
+    },
   });
 
   const shutdown = () => {
-    console.log('\n[KD Code] Shutting down services...');
+    console.log("\n[KD Code] Shutting down services...");
     uiProcess.kill();
     process.exit(0);
   };
 
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
 }
 
 /**
  * Main Entrypoint
  */
 async function main() {
-  const [,, cmd, ...args] = process.argv;
+  const [, , cmd, ...args] = process.argv;
 
   switch (cmd) {
-    case 'up':
-    case 'start': {
+    case "up":
+    case "start": {
       const options = {
-        noUi: args.includes('--no-ui'),
-        skipDb: args.includes('--skip-db'),
-        port: parseInt(args.find(a => a.startsWith('--port='))?.split('=')[1] || '3778', 10),
-        webPort: parseInt(args.find(a => a.startsWith('--web-port='))?.split('=')[1] || '5733', 10)
+        noUi: args.includes("--no-ui"),
+        skipDb: args.includes("--skip-db"),
+        port: parseInt(args.find((a) => a.startsWith("--port="))?.split("=")[1] || "3778", 10),
+        webPort: parseInt(
+          args.find((a) => a.startsWith("--web-port="))?.split("=")[1] || "5733",
+          10,
+        ),
       };
       await runUp(options);
       break;
     }
-    case 'doctor':
-    case 'health': {
+    case "doctor":
+    case "health": {
       await runDoctor();
       break;
     }
-    case 'demo-invariant': {
-      const demoScript = path.join(REPO_ROOT, 'scripts/demo-write-invariant.js');
-      const proc = spawn('node', [demoScript, ...args], { stdio: 'inherit' });
-      proc.on('close', code => process.exit(code || 0));
+    case "demo-invariant": {
+      const demoScript = path.join(REPO_ROOT, "scripts/demo-write-invariant.js");
+      const proc = spawn("node", [demoScript, ...args], { stdio: "inherit" });
+      proc.on("close", (code) => process.exit(code || 0));
       break;
     }
-    case 'verify-models': {
-      const switchScript = path.join(REPO_ROOT, 'scripts/verify-model-switch.js');
-      const proc = spawn('node', [switchScript, ...args], { stdio: 'inherit' });
-      proc.on('close', code => process.exit(code || 0));
+    case "verify-models": {
+      const switchScript = path.join(REPO_ROOT, "scripts/verify-model-switch.js");
+      const proc = spawn("node", [switchScript, ...args], { stdio: "inherit" });
+      proc.on("close", (code) => process.exit(code || 0));
       break;
     }
-    case 'ci': {
-      const ciScript = path.join(REPO_ROOT, 'scripts/headless-ci.js');
-      const proc = spawn('node', [ciScript, ...args], { stdio: 'inherit' });
-      proc.on('close', code => process.exit(code || 0));
+    case "ci": {
+      const ciScript = path.join(REPO_ROOT, "scripts/headless-ci.js");
+      const proc = spawn("node", [ciScript, ...args], { stdio: "inherit" });
+      proc.on("close", (code) => process.exit(code || 0));
       break;
     }
-    case 'bench': {
-      const benchScript = path.join(REPO_ROOT, 'scripts/bench.js');
-      const proc = spawn('node', [benchScript, ...args], { stdio: 'inherit' });
-      proc.on('close', code => process.exit(code || 0));
+    case "bench": {
+      const benchScript = path.join(REPO_ROOT, "scripts/bench.js");
+      const proc = spawn("node", [benchScript, ...args], { stdio: "inherit" });
+      proc.on("close", (code) => process.exit(code || 0));
       break;
     }
     default: {
@@ -482,7 +519,7 @@ Usage:
   }
 }
 
-main().catch(err => {
-  console.error('Fatal CLI Error:', err);
+main().catch((err) => {
+  console.error("Fatal CLI Error:", err);
   process.exit(1);
 });

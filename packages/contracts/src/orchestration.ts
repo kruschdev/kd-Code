@@ -89,8 +89,6 @@ export const GeminiModelSelection = Schema.Struct({
 });
 export type GeminiModelSelection = typeof GeminiModelSelection.Type;
 
-
-
 export const ModelSelection = Schema.Union([
   CodexModelSelection,
   ClaudeModelSelection,

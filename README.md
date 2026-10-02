@@ -11,7 +11,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Node](https://img.shields.io/badge/Node.js-22+-green.svg)
 ![Version](https://img.shields.io/badge/Release-v0.1.0-blue.svg)
-![Database](https://img.shields.io/badge/Database-PostgreSQL%20(pgvector)-lightgrey.svg)
+![Database](<https://img.shields.io/badge/Database-PostgreSQL%20(pgvector)-lightgrey.svg>)
 ![Invariant](https://img.shields.io/badge/Write%20Invariant-2PC%20Enforced-success.svg)
 
 **KD Code** is the developer control plane and visual workbench for the KruschDev coding ecosystem. It provides the human-in-the-loop interaction surface: thread history, staged diff reviews powered by `@pierre/diffs`, compiled state inspection, and two-phase commit (2PC) approval gates.
@@ -24,17 +24,17 @@ Rather than running a monolithic in-process server or letting AI models write di
 
 > ℹ️ **Scope Note**: These metrics are measured local microbenchmarks of 2PC apply, drift refusal, staged-tree sandbox execution, and context assembly across $N=25$ trials on a single development workstation, not an ecosystem-wide production SLA.
 
-| Metric | Measured Value | Architecture Substrate / Test Contract |
-|---|---|---|
-| **2PC Apply Success Rate** | **100.0%** | Atomic tempfile `fsync` + POSIX rename via `applyDiffBatch` (N=25) |
-| **2PC Apply Median Latency** | **32.19ms** | Pre-commit drift check, durable journal insert, and filesystem rename |
-| **Drift Refusal Rate** | **100.0%** | Pre-apply preimage SHA-256 validation prevents overwrite (N=25) |
-| **Drift Detection Latency** | **11.53ms** | Working tree disk inspection before rename phase |
-| **Sandboxed Verification Latency** | **0.16s** | Isolated staged-tree copy + `node --test` (`krusch.verify.json`) |
-| **Context Assembly Latency** | **16.53ms** | AST symbol retrieval, active file leases, and repo mapping |
-| **Compiled State Size** | **~0.8 KB** | Minified active FSM, open files, task leases, and AST symbols |
+| Metric                             | Measured Value | Architecture Substrate / Test Contract                                |
+| ---------------------------------- | -------------- | --------------------------------------------------------------------- |
+| **2PC Apply Success Rate**         | **100.0%**     | Atomic tempfile `fsync` + POSIX rename via `applyDiffBatch` (N=25)    |
+| **2PC Apply Median Latency**       | **32.19ms**    | Pre-commit drift check, durable journal insert, and filesystem rename |
+| **Drift Refusal Rate**             | **100.0%**     | Pre-apply preimage SHA-256 validation prevents overwrite (N=25)       |
+| **Drift Detection Latency**        | **11.53ms**    | Working tree disk inspection before rename phase                      |
+| **Sandboxed Verification Latency** | **0.16s**      | Isolated staged-tree copy + `node --test` (`krusch.verify.json`)      |
+| **Context Assembly Latency**       | **16.53ms**    | AST symbol retrieval, active file leases, and repo mapping            |
+| **Compiled State Size**            | **~0.8 KB**    | Minified active FSM, open files, task leases, and AST symbols         |
 
-*Measured on 2026-09-20 · Machine: Intel(R) Core(TM) i7-5820K CPU @ 3.30GHz (12 vCPUs, x64) · Node.js v22.23.2 · Reproduce: `node bin/kdcode.js bench --iterations=25`*
+_Measured on 2026-09-20 · Machine: Intel(R) Core(TM) i7-5820K CPU @ 3.30GHz (12 vCPUs, x64) · Node.js v22.23.2 · Reproduce: `node bin/kdcode.js bench --iterations=25`_
 
 ---
 
@@ -102,11 +102,15 @@ node bin/kdcode.js ci examples/reference-repo --patch=examples/reference-repo/fi
 ```
 
 ### Proving the Invariant
+
 Run the automated demonstration to watch the full lifecycle execute against real files and PostgreSQL:
+
 ```bash
 node bin/kdcode.js demo-invariant
 ```
+
 The script validates:
+
 1. Multi-file patch proposed.
 2. Disk verified unchanged via cryptographic hashes.
 3. Sandboxed test fails, then passes.
@@ -131,12 +135,12 @@ The script validates:
 
 Sibling services reside alongside KD Code or are configured via environment overrides:
 
-| Component | Minimum Version | Default Path | Environment Override | Responsibility |
-|---|---|---|---|---|
-| **KD Code UI** | `0.1.0` | `.` | — | Workbench UI, diff review, approval gates |
-| **Coding Harness** | `>=0.1.0` | `../krusch/bin/krusch.js` | `KRUSCH_HARNESS` | 2PC journal, task FSM, file leases |
-| **Memory Plane** | `>=1.6.0` | `../krusch-context-mcp/src/index.js` | `KRUSCH_CONTEXT_MCP` | Episodic memory, AST symbol graph, steering |
-| **Pre-Router** | `>=1.0.0` | `../krusch-pre-router/dist/index.js` | `KRUSCH_PRE_ROUTER` | L1 syntactic cost gating & archetype routing |
+| Component          | Minimum Version | Default Path                         | Environment Override | Responsibility                               |
+| ------------------ | --------------- | ------------------------------------ | -------------------- | -------------------------------------------- |
+| **KD Code UI**     | `0.1.0`         | `.`                                  | —                    | Workbench UI, diff review, approval gates    |
+| **Coding Harness** | `>=0.1.0`       | `../krusch/bin/krusch.js`            | `KRUSCH_HARNESS`     | 2PC journal, task FSM, file leases           |
+| **Memory Plane**   | `>=1.6.0`       | `../krusch-context-mcp/src/index.js` | `KRUSCH_CONTEXT_MCP` | Episodic memory, AST symbol graph, steering  |
+| **Pre-Router**     | `>=1.0.0`       | `../krusch-pre-router/dist/index.js` | `KRUSCH_PRE_ROUTER`  | L1 syntactic cost gating & archetype routing |
 
 Pinned compatibility is defined centrally in [`krusch-ecosystem.json`](./krusch-ecosystem.json) and validated on every boot by `kdcode doctor`.
 

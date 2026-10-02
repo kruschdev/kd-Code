@@ -80,14 +80,14 @@ sequenceDiagram
 
     UI->>Bridge: POST /api/harness/run
     Bridge->>Harness: krusch_run (goal, taskId)
-    
+
     Note over Harness: Model plans and generates diffs
     Harness->>Harness: INSERT INTO krusch_staged_diffs (SHA-256)
     Note over Harness,Disk: Working tree remains completely untouched
 
     Harness->>Harness: Execute tests in staged sandbox (krusch.verify.json)
     Harness-->>Bridge: Phase = APPROVAL_GATE (Tests Passed)
-    
+
     UI->>Bridge: GET /api/harness/diff
     Bridge->>Harness: krusch_diff
     Harness-->>UI: Unified Patch
@@ -106,16 +106,19 @@ sequenceDiagram
 ## 3. Separation of Responsibilities
 
 ### KD Code (`krusch-ide`)
+
 - **Visual Command Deck**: Renders prompt input, session history, active terminals, and diff cards.
 - **Model Switching**: Allows selecting between Gemini 3.1, Claude 3.7, and local Ollama models without state loss.
 - **Diff Inspection**: Native syntax-highlighted diff rendering via `@pierre/diffs`.
 
 ### krusch (`../krusch`)
+
 - **Postgres FSM**: Authoritative task lifecycle (`PLAN -> IMPLEMENT -> VERIFY -> APPROVAL_GATE -> COMMITTED`).
 - **Sandboxed Verification**: Applies staged diffs to a virtual staging directory and executes verification contracts (`krusch.verify.json`).
 - **Two-Phase Commit (2PC) Apply Journal**: Staged diffs are applied via temporary file write, `fsync`, and atomic rename. Preimage snapshots ensure instant crash recovery.
 
 ### krusch-context-mcp (`../krusch-context-mcp`)
+
 - **Semantic Memory**: Reciprocal Rank Fusion (RRF) combining dense vector embeddings with exact AST symbol extraction.
 - **Centroid Routing**: Neural classification of prompts into functional archetypes.
 - **Steering Nuggets**: Negative constraints and behavioral guidance automatically injected into prompts.

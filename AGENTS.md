@@ -18,11 +18,11 @@ KD Code is the developer control plane and visual workbench for the KruschDev ec
 
 Sibling services reside alongside this repository by convention, or can be overridden via environment variables:
 
-| Component | Default Path | Environment Override |
-|---|---|---|
-| Memory Plane | `../krusch-context-mcp/src/index.js` | `KRUSCH_CONTEXT_MCP` |
-| Coding Harness | `../krusch/bin/krusch.js` | `KRUSCH_HARNESS` |
-| Pre-Router (L1) | `../krusch-pre-router/dist/index.js` | `KRUSCH_PRE_ROUTER` |
+| Component       | Default Path                         | Environment Override |
+| --------------- | ------------------------------------ | -------------------- |
+| Memory Plane    | `../krusch-context-mcp/src/index.js` | `KRUSCH_CONTEXT_MCP` |
+| Coding Harness  | `../krusch/bin/krusch.js`            | `KRUSCH_HARNESS`     |
+| Pre-Router (L1) | `../krusch-pre-router/dist/index.js` | `KRUSCH_PRE_ROUTER`  |
 
 Database: PostgreSQL with `pgvector` (`postgres://kdcode:password@localhost:5432/kdcode`).
 **NEVER wipe `kdcode-postgres-data`**: volume contains active context embeddings and centroids.

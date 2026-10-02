@@ -76,12 +76,19 @@ export function ContextInspectorPanel({
   };
 
   return (
-    <div className={cn("flex flex-col h-full bg-card border-l border-border text-foreground select-text", className)}>
+    <div
+      className={cn(
+        "flex flex-col h-full bg-card border-l border-border text-foreground select-text",
+        className,
+      )}
+    >
       {/* Panel Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/40">
         <div className="flex items-center gap-2">
           <BrainIcon className="w-4 h-4 text-primary" />
-          <span className="text-xs font-semibold uppercase tracking-wider">Context & Model Inspector</span>
+          <span className="text-xs font-semibold uppercase tracking-wider">
+            Context & Model Inspector
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -89,10 +96,16 @@ export function ContextInspectorPanel({
             title={redactionEnabled ? "Secrets Redacted (Safe)" : "Secrets Visible"}
             className={cn(
               "flex items-center gap-1 text-[11px] px-2 py-0.5 rounded border transition-colors",
-              redactionEnabled ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : "bg-muted border-border text-muted-foreground"
+              redactionEnabled
+                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                : "bg-muted border-border text-muted-foreground",
             )}
           >
-            {redactionEnabled ? <EyeOffIcon className="w-3 h-3" /> : <EyeIcon className="w-3 h-3" />}
+            {redactionEnabled ? (
+              <EyeOffIcon className="w-3 h-3" />
+            ) : (
+              <EyeIcon className="w-3 h-3" />
+            )}
             {redactionEnabled ? "Redacted" : "Raw"}
           </button>
           <button
@@ -113,7 +126,7 @@ export function ContextInspectorPanel({
             "flex-1 py-2 font-medium transition-colors text-center border-b-2",
             activeTab === "compiled"
               ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground",
           )}
         >
           Compiled State
@@ -124,7 +137,7 @@ export function ContextInspectorPanel({
             "flex-1 py-2 font-medium transition-colors text-center border-b-2",
             activeTab === "router"
               ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground",
           )}
         >
           Why This Model
@@ -135,7 +148,7 @@ export function ContextInspectorPanel({
             "flex-1 py-2 font-medium transition-colors text-center border-b-2",
             activeTab === "leases"
               ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground",
           )}
         >
           Leases & Invariants
@@ -147,7 +160,10 @@ export function ContextInspectorPanel({
         {activeTab === "compiled" && (
           <div className="space-y-3">
             <div className="flex items-center justify-between text-[11px] text-muted-foreground bg-muted/40 p-2 rounded border border-border">
-              <span>Target Model: <strong className="text-foreground">{selectedModel}</strong> ({selectedProvider})</span>
+              <span>
+                Target Model: <strong className="text-foreground">{selectedModel}</strong> (
+                {selectedProvider})
+              </span>
               <span className="flex items-center gap-1 text-emerald-400">
                 <CheckCircle2Icon className="w-3 h-3" /> Zero Context Loss
               </span>
@@ -196,19 +212,27 @@ export function ContextInspectorPanel({
               <div className="grid grid-cols-2 gap-2 pt-1 text-[11px]">
                 <div>
                   <span className="text-muted-foreground">Recommended: </span>
-                  <span className="text-foreground font-medium">{routeInfo?.recommendedModel || selectedModel}</span>
+                  <span className="text-foreground font-medium">
+                    {routeInfo?.recommendedModel || selectedModel}
+                  </span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Confidence: </span>
-                  <span className="text-foreground font-medium">{routeInfo ? `${(routeInfo.confidence * 100).toFixed(0)}%` : "100%"}</span>
+                  <span className="text-foreground font-medium">
+                    {routeInfo ? `${(routeInfo.confidence * 100).toFixed(0)}%` : "100%"}
+                  </span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Latency: </span>
-                  <span className="text-foreground font-medium">{routeInfo?.durationMs ? `${routeInfo.durationMs}ms` : "<15µs"}</span>
+                  <span className="text-foreground font-medium">
+                    {routeInfo?.durationMs ? `${routeInfo.durationMs}ms` : "<15µs"}
+                  </span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Role: </span>
-                  <span className="text-foreground font-medium">{routeInfo?.role || "code_synthesis"}</span>
+                  <span className="text-foreground font-medium">
+                    {routeInfo?.role || "code_synthesis"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -218,7 +242,8 @@ export function ContextInspectorPanel({
                 Routing Rationale:
               </span>
               <p className="text-xs text-muted-foreground bg-muted/40 p-2.5 rounded border border-border">
-                {routeInfo?.reason || "Matched deterministic fast-path syntax heuristic (zero cloud routing latency). Escalates to L2 Neural Centroid via pgvector if prompt complexity requires frontier reasoning."}
+                {routeInfo?.reason ||
+                  "Matched deterministic fast-path syntax heuristic (zero cloud routing latency). Escalates to L2 Neural Centroid via pgvector if prompt complexity requires frontier reasoning."}
               </p>
             </div>
 
@@ -228,15 +253,21 @@ export function ContextInspectorPanel({
               </span>
               <div className="p-2 rounded bg-muted/20 border border-border/60 text-[11px] space-y-1">
                 <div className="flex justify-between">
-                  <span className="text-foreground font-medium">Stage 0: L1 Syntactic Pre-Router</span>
+                  <span className="text-foreground font-medium">
+                    Stage 0: L1 Syntactic Pre-Router
+                  </span>
                   <span className="text-emerald-400">&lt;15µs CPU</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-foreground font-medium">Stage 1: L2 Neural Centroid Escalation</span>
+                  <span className="text-foreground font-medium">
+                    Stage 1: L2 Neural Centroid Escalation
+                  </span>
                   <span className="text-blue-400">~12ms pgvector</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-foreground font-medium">Stage 2: Frontier Multi-Turn Agent</span>
+                  <span className="text-foreground font-medium">
+                    Stage 2: Frontier Multi-Turn Agent
+                  </span>
                   <span className="text-purple-400">Claude 3.7 / Gemini 3.1</span>
                 </div>
               </div>
@@ -252,7 +283,10 @@ export function ContextInspectorPanel({
               </span>
               <div className="space-y-1">
                 {activeLeases.map((lease, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-2 rounded bg-muted/40 border border-border">
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-2 rounded bg-muted/40 border border-border"
+                  >
                     <span className="text-foreground font-medium">{lease.file}</span>
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">
                       {lease.ttl}
@@ -264,7 +298,8 @@ export function ContextInspectorPanel({
 
             <div className="space-y-1.5 pt-2 border-t border-border/50">
               <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                <ShieldCheckIcon className="w-3 h-3 text-emerald-400" /> Disk Write Invariants Enforced:
+                <ShieldCheckIcon className="w-3 h-3 text-emerald-400" /> Disk Write Invariants
+                Enforced:
               </span>
               <ul className="space-y-1 text-muted-foreground text-[11px] list-disc list-inside">
                 <li>Zero direct disk mutations during agent turns</li>

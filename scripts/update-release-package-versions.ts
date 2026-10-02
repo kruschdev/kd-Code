@@ -6,7 +6,6 @@ import { Config, Console, Effect, FileSystem, Option, Path, Schema, SchemaGetter
 import { Argument, Command, Flag } from "effect/unstable/cli";
 
 export const releasePackageFiles = [
-  "apps/server/package.json",
   "apps/desktop/package.json",
   "apps/web/package.json",
   "packages/contracts/package.json",

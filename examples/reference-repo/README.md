@@ -7,6 +7,7 @@ A minimal, zero-dependency reference project demonstrating **KD Code & Krusch Ve
 ## 🎯 Purpose
 
 In KD Code, **agents never mutate working trees directly**. All proposed diffs are:
+
 1. Held in PostgreSQL pre-commit staging.
 2. Verified against project test suites inside an isolated sandbox (`krusch.verify.json`).
 3. Refused immediately if tests fail, write boundaries are breached, or forbidden files are touched.
@@ -17,22 +18,28 @@ In KD Code, **agents never mutate working trees directly**. All proposed diffs a
 ## ⏱️ 10-Minute Reproduction Guide
 
 ### Prerequisites
+
 Make sure PostgreSQL is running and the KD Code CLI is available:
+
 ```bash
 # Verify ecosystem health
 node bin/kdcode.js doctor
 ```
 
 ### 1. Test Baseline Health
+
 The reference repo uses Node's native test runner (`node --test`), requiring zero `node_modules`:
+
 ```bash
 node --test test/*.test.js
 ```
-*Expected: 5 tests pass.*
+
+_Expected: 5 tests pass._
 
 ---
 
 ### 2. Scenario A: Known-Good Refactor (Sandboxed Test Pass → Atomic Apply)
+
 Run the headless CI runner against a multi-file patch that introduces `modulo()` and `clamp()` with valid tests:
 
 ```bash
@@ -40,6 +47,7 @@ node bin/kdcode.js ci examples/reference-repo --patch=examples/reference-repo/fi
 ```
 
 **What happens:**
+
 1. The patch is staged in PostgreSQL (`krusch_staged_diffs`). The physical disk remains untouched.
 2. A temporary sandbox clone is created.
 3. Tests run via `krusch.verify.json` (`node --test test/*.test.js`) and pass (Exit code 0).
@@ -49,6 +57,7 @@ node bin/kdcode.js ci examples/reference-repo --patch=examples/reference-repo/fi
 ---
 
 ### 3. Scenario B: Known-Bad Hallucination (Broken Logic → Test Failure → Apply Refused)
+
 Run the headless CI runner against a patch containing inverted arithmetic logic (`add()` returns `a - b`):
 
 ```bash
@@ -56,6 +65,7 @@ node bin/kdcode.js ci examples/reference-repo --patch=examples/reference-repo/fi
 ```
 
 **What happens:**
+
 1. Staged in PostgreSQL without touching disk.
 2. Sandboxed test runner executes `node --test` in the sandbox.
 3. Test fails with assertion error (`AssertionError: 2 - 3 == 5`).
@@ -65,6 +75,7 @@ node bin/kdcode.js ci examples/reference-repo --patch=examples/reference-repo/fi
 ---
 
 ### 4. Scenario C: Known-Bad Security Breach (Forbidden File Modification Refused)
+
 Run the headless CI runner against a patch attempting to overwrite `.env`:
 
 ```bash
@@ -72,6 +83,7 @@ node bin/kdcode.js ci examples/reference-repo --patch=examples/reference-repo/fi
 ```
 
 **What happens:**
+
 1. KD Code inspects the patch against `krusch.verify.json` and default security rules.
 2. Identifies `.env` as a forbidden file outside `allowedWriteRoots: ["src/", "test/"]`.
 3. **Execution terminates immediately:** `❌ SECURITY REFUSAL: Proposed diff touches sensitive forbidden path '.env'`.
@@ -88,14 +100,7 @@ node bin/kdcode.js ci examples/reference-repo --patch=examples/reference-repo/fi
   "command": "node --test test/*.test.js",
   "sandbox": true,
   "timeoutMs": 15000,
-  "allowedWriteRoots": [
-    "src/",
-    "test/"
-  ],
-  "forbiddenPaths": [
-    ".env",
-    "config/secrets.json",
-    "private/"
-  ]
+  "allowedWriteRoots": ["src/", "test/"],
+  "forbiddenPaths": [".env", "config/secrets.json", "private/"]
 }
 ```

@@ -705,13 +705,7 @@ function normalizeProviderModelOptions(
         }
       : undefined;
 
-  if (
-    !codex &&
-    !claude &&
-    cursor === undefined &&
-    !opencode &&
-    !gemini
-  ) {
+  if (!codex && !claude && cursor === undefined && !opencode && !gemini) {
     return null;
   }
   return {
@@ -808,13 +802,7 @@ function legacyToModelSelectionByProvider(
   const result: Partial<Record<ProviderKind, ModelSelection>> = {};
   // Add entries from the options bag (for non-active providers)
   if (modelOptions) {
-    for (const provider of [
-      "codex",
-      "claudeAgent",
-      "cursor",
-      "opencode",
-      "gemini",
-    ] as const) {
+    for (const provider of ["codex", "claudeAgent", "cursor", "opencode", "gemini"] as const) {
       const options = modelOptions[provider];
       if (options && Object.keys(options).length > 0) {
         result[provider] = createModelSelection(

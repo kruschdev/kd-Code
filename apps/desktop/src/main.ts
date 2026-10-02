@@ -527,7 +527,10 @@ function ensureInitialBackendWindowOpen(): void {
         `bootstrap backend readiness warning message=${formatErrorMessage(error)}`,
       );
       try {
-        console.warn("[desktop] backend readiness check timed out during packaged bootstrap", error);
+        console.warn(
+          "[desktop] backend readiness check timed out during packaged bootstrap",
+          error,
+        );
       } catch (e) {}
     })
     .finally(() => {

@@ -1,8 +1,8 @@
 {
   "name": "@krusch/ide",
   "version": "0.1.0",
-  "description": "Developer workbench and AI control plane: switch seamlessly between Claude, Gemini, and local models without ever losing project context or architectural state.",
   "private": true,
+  "description": "Developer workbench and AI control plane: switch seamlessly between Claude, Gemini, and local models without ever losing project context or architectural state.",
   "bin": {
     "kdcode": "./bin/kdcode.js"
   },

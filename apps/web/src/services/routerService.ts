@@ -1,7 +1,7 @@
 /**
  * @file routerService.ts
  * Client-side dual-stage router service for KD Code.
- * 
+ *
  * Orchestrates:
  * - Stage 0 / L1 Pre-Router (Deterministic syntax evaluation in <15µs CPU)
  * - Stage 1 / L2 Neural Centroid Escalation (via krusch-context-mcp bridge)
@@ -26,7 +26,11 @@ const BRIDGE_URL = "http://localhost:3778";
  * Fast client-side syntactic regex checks (L1 fast-path heuristics)
  * Matches code fences, SQL syntax, LaTeX, and regex transformations.
  */
-function evaluateL1SyntacticFastPath(prompt: string): { isFastPath: boolean; role?: string; reason?: string } {
+function evaluateL1SyntacticFastPath(prompt: string): {
+  isFastPath: boolean;
+  role?: string;
+  reason?: string;
+} {
   if (!prompt || typeof prompt !== "string") {
     return { isFastPath: false };
   }
@@ -39,17 +43,28 @@ function evaluateL1SyntacticFastPath(prompt: string): { isFastPath: boolean; rol
   }
 
   // 2. SQL DDL / DML keywords
-  if (/^\s*(?:SELECT\s+[\s\S]+?\s+FROM|INSERT\s+INTO|UPDATE\s+\w+\s+SET|DELETE\s+FROM|CREATE\s+(?:TABLE|INDEX|VIEW)|ALTER\s+TABLE)\b/i.test(trimmed)) {
+  if (
+    /^\s*(?:SELECT\s+[\s\S]+?\s+FROM|INSERT\s+INTO|UPDATE\s+\w+\s+SET|DELETE\s+FROM|CREATE\s+(?:TABLE|INDEX|VIEW)|ALTER\s+TABLE)\b/i.test(
+      trimmed,
+    )
+  ) {
     return { isFastPath: true, role: "code", reason: "sql_syntax" };
   }
 
   // 3. Diff / Unified patch
-  if (/^--- [a-zA-Z0-9_\-./]+\n\+\+\+ [a-zA-Z0-9_\-./]+/m.test(trimmed) || /^(?:diff --git|@@ -\d+,\d+ \+\d+,\d+ @@)/m.test(trimmed)) {
+  if (
+    /^--- [a-zA-Z0-9_\-./]+\n\+\+\+ [a-zA-Z0-9_\-./]+/m.test(trimmed) ||
+    /^(?:diff --git|@@ -\d+,\d+ \+\d+,\d+ @@)/m.test(trimmed)
+  ) {
     return { isFastPath: true, role: "code", reason: "patch_diff" };
   }
 
   // 4. Closed-world tasks (syntax format, regex, JSON convert)
-  if (/^(?:format|prettify|lint|convert)\b[\s\S]+?\b(?:to|into)?\s*(?:json|yaml|csv|xml|sql)\b/i.test(trimmed)) {
+  if (
+    /^(?:format|prettify|lint|convert)\b[\s\S]+?\b(?:to|into)?\s*(?:json|yaml|csv|xml|sql)\b/i.test(
+      trimmed,
+    )
+  ) {
     return { isFastPath: true, role: "code", reason: "closed_world_transform" };
   }
 
@@ -126,7 +141,9 @@ export async function resolveOptimalRoute(prompt: string): Promise<ResolvedRoute
     recommendedProvider: isCodeHeavy ? "claudeAgent" : "gemini",
     recommendedModel: isCodeHeavy ? "claude-3-7-sonnet" : "gemini-3.1-pro",
     confidence: 0.7,
-    reason: isCodeHeavy ? "Lexical code indicators detected" : "Default heavy reasoning router fallback",
+    reason: isCodeHeavy
+      ? "Lexical code indicators detected"
+      : "Default heavy reasoning router fallback",
     durationMs: Number(durationMs.toFixed(2)),
   };
 }

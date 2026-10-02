@@ -602,7 +602,7 @@ export default function ChatView(props: ChatViewProps) {
     threadId,
     routeKind,
     onDiffPanelOpen,
-      reserveTitleBarControlInset = true,
+    reserveTitleBarControlInset = true,
   } = props;
   const draftId = routeKind === "draft" ? props.draftId : null;
   const routeThreadRef = useMemo(
@@ -634,7 +634,9 @@ export default function ChatView(props: ChatViewProps) {
     select: (params) => parseDiffRouteSearch(params),
   });
   const { resolvedTheme } = useTheme();
-  const [workspaceViewMode, setWorkspaceViewMode] = useState<"thread" | "staged-diff" | "context-inspector">("thread");
+  const [workspaceViewMode, setWorkspaceViewMode] = useState<
+    "thread" | "staged-diff" | "context-inspector"
+  >("thread");
   // Granular store selectors — avoid subscribing to prompt changes.
   const composerRuntimeMode = useComposerDraftStore(
     (store) => store.getComposerDraft(composerDraftTarget)?.runtimeMode ?? null,
@@ -3332,7 +3334,7 @@ export default function ChatView(props: ChatViewProps) {
               "flex items-center gap-1.5 px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer",
               workspaceViewMode === "thread"
                 ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             <MessageSquareIcon className="size-3.5" />
@@ -3345,7 +3347,7 @@ export default function ChatView(props: ChatViewProps) {
               "flex items-center gap-1.5 px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer",
               workspaceViewMode === "staged-diff"
                 ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             <GitCompareIcon className="size-3.5" />
@@ -3363,7 +3365,7 @@ export default function ChatView(props: ChatViewProps) {
               "flex items-center gap-1.5 px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer",
               workspaceViewMode === "context-inspector"
                 ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             <BrainIcon className="size-3.5" />
@@ -3426,7 +3428,9 @@ export default function ChatView(props: ChatViewProps) {
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background">
             <ContextInspectorPanel
               projectName={activeProject?.name || "krusch-ide"}
-              selectedModel={activeThread?.modelSelection?.model ?? activeProject?.defaultModelSelection?.model}
+              selectedModel={
+                activeThread?.modelSelection?.model ?? activeProject?.defaultModelSelection?.model
+              }
               selectedProvider={selectedProvider}
             />
           </div>

@@ -28,7 +28,7 @@ export async function getOrCreateMcpClient(url: string): Promise<Client> {
     },
     {
       capabilities: {},
-    }
+    },
   );
 
   // Keep track of connection lifecycle
@@ -36,14 +36,14 @@ export async function getOrCreateMcpClient(url: string): Promise<Client> {
     console.log(`[MCP] Connection closed: ${url}`);
     clients.delete(url);
   };
-  
+
   transport.onerror = (error) => {
     console.error(`[MCP] Transport error for ${url}:`, error);
   };
 
   await client.connect(transport);
   console.log(`[MCP] Connected successfully to ${url}`);
-  
+
   clients.set(url, client);
   return client;
 }
@@ -70,7 +70,7 @@ export async function getAggregatedMcpTools() {
   for (const [url, client] of clients.entries()) {
     try {
       const result = await client.listTools();
-      tools.push(...(result.tools.map(t => ({ ...t, serverUrl: url }))));
+      tools.push(...result.tools.map((t) => ({ ...t, serverUrl: url })));
     } catch (err) {
       console.warn(`[MCP] Failed to list tools from ${url}`, err);
     }

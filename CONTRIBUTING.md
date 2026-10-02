@@ -11,12 +11,15 @@ Thank you for contributing to **KD Code**, the developer control plane and workb
 ## How Can I Contribute?
 
 ### Reporting Issues
+
 If you encounter any bridge connection drops, PostgreSQL transaction issues, or UI regressions, please open an issue with:
+
 - Reproduction steps
 - Node & PostgreSQL version
 - Diagnostic output from `node bin/kdcode.js doctor`
 
 ### Pull Requests
+
 1. **Fork the repo** and create your feature branch.
 2. **Verify the Invariant**: Run `node bin/kdcode.js demo-invariant` to confirm the 7-step write invariant is preserved.
 3. **Verify Reference Fixtures**: Run `node scripts/run-ci-fixtures.js` to verify test gating and security contracts.

@@ -31,7 +31,7 @@ If you are already running the desktop app and want to make it reachable from ot
 ### Option 2: Headless Server (CLI)
 
 Use this when you want to run the server without a GUI, for example on a remote machine over SSH.
- 
+
 Run the server with the `serve` CLI command.
 
 ```bash
@@ -52,39 +52,39 @@ From there, connect from another device in either of these ways:
 - in the desktop app, enter the host and token separately
 
 Use `bun run apps/server/src/bin.ts serve --help` for the full flag reference. It supports the same general startup options as the normal server command, including an optional `cwd` argument.
- 
- > Note
- > The GUIs do not currently support adding projects on remote environments.
- > For now, use the `project` CLI command on the server machine instead.
- > Full GUI support for remote project management is coming soon.
- 
- ## How Pairing Works
- 
- The remote device does not need a long-lived secret up front.
- 
- Instead:
- 
- 1. The `serve` command issues a one-time owner pairing token.
- 2. The remote device exchanges that token with the server.
- 3. The server creates an authenticated session for that device.
- 
- After pairing, future access is session-based. You do not need to keep reusing the original token unless you are pairing a new device.
- 
- ## Managing Access Later
- 
- Use the `auth` CLI command to manage access after the initial pairing flow.
- 
- Typical uses:
- 
- - issue additional pairing credentials
- - inspect active sessions
- - revoke old pairing links or sessions
- 
- Use `bun run apps/server/src/bin.ts auth --help` and the nested subcommand help pages for the full reference.
- 
- ## Security Notes
- 
- - Treat pairing URLs and pairing tokens like passwords.
- - Prefer binding `--host` to a trusted private address, such as a Tailnet IP, instead of exposing the server broadly.
- - Anyone with a valid pairing credential can create a session until that credential expires or is revoked.
- - Use the `auth` CLI command to revoke credentials or sessions you no longer trust.
+
+> Note
+> The GUIs do not currently support adding projects on remote environments.
+> For now, use the `project` CLI command on the server machine instead.
+> Full GUI support for remote project management is coming soon.
+
+## How Pairing Works
+
+The remote device does not need a long-lived secret up front.
+
+Instead:
+
+1.  The `serve` command issues a one-time owner pairing token.
+2.  The remote device exchanges that token with the server.
+3.  The server creates an authenticated session for that device.
+
+After pairing, future access is session-based. You do not need to keep reusing the original token unless you are pairing a new device.
+
+## Managing Access Later
+
+Use the `auth` CLI command to manage access after the initial pairing flow.
+
+Typical uses:
+
+- issue additional pairing credentials
+- inspect active sessions
+- revoke old pairing links or sessions
+
+Use `bun run apps/server/src/bin.ts auth --help` and the nested subcommand help pages for the full reference.
+
+## Security Notes
+
+- Treat pairing URLs and pairing tokens like passwords.
+- Prefer binding `--host` to a trusted private address, such as a Tailnet IP, instead of exposing the server broadly.
+- Anyone with a valid pairing credential can create a session until that credential expires or is revoked.
+- Use the `auth` CLI command to revoke credentials or sessions you no longer trust.

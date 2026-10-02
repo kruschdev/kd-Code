@@ -1,31 +1,31 @@
 #!/usr/bin/env node
 
-import { spawn } from 'node:child_process';
-import { createInterface } from 'node:readline';
+import { spawn } from "node:child_process";
+import { createInterface } from "node:readline";
 
-const SERVER = '/home/krusch/homelab/projects/krusch-context-mcp/src/index.js';
+const SERVER = "/home/krusch/homelab/projects/krusch-context-mcp/src/index.js";
 let nextId = 1;
 const pending = new Map();
 
 const env = {
   ...process.env,
-  DB_HOST: 'localhost',
-  DB_PORT: '5432',
-  DB_NAME: 'kdcode',
-  DB_USER: 'kdcode',
-  DB_PASSWORD: 'password',
-  OLLAMA_URL: 'http://localhost:11434',
-  DOTENV_CONFIG_QUIET: 'true',
-  KRUSCH_PROFILE: 'ecosystem'
+  DB_HOST: "localhost",
+  DB_PORT: "5432",
+  DB_NAME: "kdcode",
+  DB_USER: "kdcode",
+  DB_PASSWORD: "password",
+  OLLAMA_URL: "http://localhost:11434",
+  DOTENV_CONFIG_QUIET: "true",
+  KRUSCH_PROFILE: "ecosystem",
 };
 
-const child = spawn('node', [SERVER], {
-  stdio: ['pipe', 'pipe', 'inherit'],
-  env
+const child = spawn("node", [SERVER], {
+  stdio: ["pipe", "pipe", "inherit"],
+  env,
 });
 
 const rl = createInterface({ input: child.stdout, crlfDelay: Infinity });
-rl.on('line', (line) => {
+rl.on("line", (line) => {
   try {
     const msg = JSON.parse(line);
     if (msg.id && pending.has(msg.id)) {
@@ -41,8 +41,8 @@ function send(method, params = {}) {
   return new Promise((resolve, reject) => {
     const id = nextId++;
     pending.set(id, resolve);
-    const msg = JSON.stringify({ jsonrpc: '2.0', method, params, id });
-    child.stdin.write(msg + '\n');
+    const msg = JSON.stringify({ jsonrpc: "2.0", method, params, id });
+    child.stdin.write(msg + "\n");
     setTimeout(() => {
       if (pending.has(id)) {
         pending.delete(id);
@@ -53,45 +53,48 @@ function send(method, params = {}) {
 }
 
 async function main() {
-  console.log('Connecting to krusch-context-mcp with KRUSCH_PROFILE=ecosystem...');
-  const init = await send('initialize', {
-    protocolVersion: '2024-11-05',
+  console.log("Connecting to krusch-context-mcp with KRUSCH_PROFILE=ecosystem...");
+  const init = await send("initialize", {
+    protocolVersion: "2024-11-05",
     capabilities: {},
-    clientInfo: { name: 'krusch-ide-checker', version: '1.0.0' }
+    clientInfo: { name: "krusch-ide-checker", version: "1.0.0" },
   });
-  console.log('Server info:', init.result?.serverInfo);
+  console.log("Server info:", init.result?.serverInfo);
 
-  child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
-  await new Promise(r => setTimeout(r, 200));
+  child.stdin.write(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }) + "\n");
+  await new Promise((r) => setTimeout(r, 200));
 
-  console.log('\nFetching tools list...');
-  const toolsRes = await send('tools/list');
+  console.log("\nFetching tools list...");
+  const toolsRes = await send("tools/list");
   const tools = toolsRes.result?.tools || [];
   console.log(`Discovered ${tools.length} exposed tools:`);
   for (const t of tools) {
     console.log(` - ${t.name}: ${t.description?.slice(0, 70)}...`);
   }
 
-  console.log('\nCalling krusch_context_health...');
-  const healthRes = await send('tools/call', {
-    name: 'krusch_context_health',
-    arguments: {}
+  console.log("\nCalling krusch_context_health...");
+  const healthRes = await send("tools/call", {
+    name: "krusch_context_health",
+    arguments: {},
   });
-  console.log('Health check result:\n', healthRes.result?.content?.[0]?.text);
+  console.log("Health check result:\n", healthRes.result?.content?.[0]?.text);
 
   console.log('\nCalling krusch_context_retrieve (query: "*")...');
-  const retrieveRes = await send('tools/call', {
-    name: 'krusch_context_retrieve',
-    arguments: { query: '*', limit_tokens: 500 }
+  const retrieveRes = await send("tools/call", {
+    name: "krusch_context_retrieve",
+    arguments: { query: "*", limit_tokens: 500 },
   });
-  console.log('Retrieve result snippet:\n', retrieveRes.result?.content?.[0]?.text?.slice(0, 200) + '...');
+  console.log(
+    "Retrieve result snippet:\n",
+    retrieveRes.result?.content?.[0]?.text?.slice(0, 200) + "...",
+  );
 
-  child.kill('SIGTERM');
+  child.kill("SIGTERM");
   process.exit(0);
 }
 
-main().catch(err => {
-  console.error('Test failed:', err);
-  child.kill('SIGTERM');
+main().catch((err) => {
+  console.error("Test failed:", err);
+  child.kill("SIGTERM");
   process.exit(1);
 });
