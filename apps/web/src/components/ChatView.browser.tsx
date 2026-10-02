@@ -2298,13 +2298,12 @@ describe("ChatView timeline estimator parity (full app)", () => {
       );
       checkoutItem.click();
 
-      const worktreeButton = await waitForElement(
-        () =>
-          Array.from(document.querySelectorAll("button")).find(
-            (button) => button.textContent?.trim() === "Worktree",
-          ) as HTMLButtonElement | null,
-        "Unable to find Worktree button.",
-      );
+      const worktreeButton = await waitForElement(() => {
+        const button = Array.from(document.querySelectorAll("button")).find(
+          (b) => b.textContent?.trim() === "Worktree",
+        ) as HTMLButtonElement | null;
+        return button && !button.disabled ? button : null;
+      }, "Unable to find enabled Worktree button.");
       worktreeButton.click();
 
       await vi.waitFor(

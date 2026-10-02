@@ -205,7 +205,7 @@ Usage:
     console.error(`\n🔒 Disk Write Invariant Preserved: Working tree remains 100% untouched.`);
     try {
       await KruschStateManager.updateTask(taskId, { phase: "ABORTED" });
-    } catch (_) {}
+    } catch {}
     process.exit(1);
   }
 

@@ -40,7 +40,7 @@ if (!fs.existsSync(stateManagerModule) || !fs.existsSync(contractModule)) {
 
 const { KruschStateManager } = await import(stateManagerModule);
 const { KruschVerificationContract } = await import(contractModule);
-const { query, pool } = await import(path.resolve(kruschRoot, "src/brain/pool.js"));
+const { query } = await import(path.resolve(kruschRoot, "src/brain/pool.js"));
 
 function sha256(content) {
   return crypto
@@ -506,7 +506,7 @@ describe('Math Operations', () => {
   // Clean up fixture directory
   try {
     fs.rmSync(fixtureDir, { recursive: true, force: true });
-  } catch (_) {}
+  } catch {}
 
   console.log("\n══════════════════════════════════════════════════════════════════════");
   console.log("🎉 ALL 7 WRITE INVARIANT CRITERIA VERIFIED & VALIDATED:");

@@ -173,7 +173,7 @@ async function verifyModelSwitch() {
   let activeLeases = [];
   try {
     activeLeases = await KruschStateManager.listActiveLeases();
-  } catch (_) {}
+  } catch {}
   console.log(`  ✓ Repository files mapped: ${context.files.length} files`);
   console.log(`  ✓ Active single-writer concurrency leases: ${activeLeases.length}`);
 

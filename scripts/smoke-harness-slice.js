@@ -16,12 +16,7 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import crypto from "node:crypto";
-import {
-  resolveSiblingPath,
-  requireSiblingPath,
-  startBridgeServer,
-  shutdownClients,
-} from "./context-cli.js";
+import { requireSiblingPath, startBridgeServer, shutdownClients } from "./context-cli.js";
 
 const BRIDGE_PORT = 3779; // Dedicated test port to prevent collisions
 const BRIDGE_HOST = "127.0.0.1";
@@ -75,7 +70,7 @@ export function add(a, b) {
   console.log(`  📁 ${fixtureDir}`);
   console.log(`  📄 ${testFileRel} (initial: subtraction bug)`);
 
-  const initialHash = crypto.createHash("sha256").update(initialCode).digest("hex");
+  const _initialHash = crypto.createHash("sha256").update(initialCode).digest("hex");
 
   // 3. Initialize task and stage diff into PostgreSQL ACID substrate
   const taskId = `smoke_task_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
