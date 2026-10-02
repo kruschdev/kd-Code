@@ -183,7 +183,7 @@ jobs:
       - name: Verify Pin Enforcement (kdcode doctor)
         run: |
           cd kd-Code
-          node bin/kdcode.js doctor
+          node bin/kdcode.js doctor krusch
         env:
           DATABASE_URL: postgres://kdcode:password@localhost:5432/kdcode
           KRUSCH_HARNESS: ../krusch/bin/krusch.js

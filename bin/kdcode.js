@@ -62,7 +62,7 @@ function checkSibling(name, config) {
   let repoPath = null;
 
   if (process.env[envVar]) {
-    repoPath = path.resolve(process.env[envVar]);
+    repoPath = path.resolve(REPO_ROOT, process.env[envVar]);
     if (!fs.existsSync(repoPath)) {
       return {
         name,
@@ -70,6 +70,24 @@ function checkSibling(name, config) {
         error: `Configured ${envVar}="${process.env[envVar]}" does not exist on disk.`,
         fix: `Update ${envVar} or remove it to use default path: ${config.defaultPath}`,
       };
+    }
+    // If envVar points directly to an entrypoint file, strip it to locate repo root
+    if (fs.statSync(repoPath).isFile()) {
+      if (repoPath.endsWith(config.entrypoint)) {
+        repoPath = repoPath
+          .slice(0, repoPath.length - config.entrypoint.length)
+          .replace(/[/\\]+$/, "");
+      } else {
+        let candidate = path.dirname(repoPath);
+        while (candidate && candidate !== path.dirname(candidate)) {
+          if (fs.existsSync(path.join(candidate, "package.json"))) {
+            repoPath = candidate;
+            break;
+          }
+          candidate = path.dirname(candidate);
+        }
+      }
+      repoPath = path.resolve(repoPath);
     }
   } else {
     repoPath = path.resolve(REPO_ROOT, config.defaultPath);
@@ -215,13 +233,28 @@ function semverGte(current, target) {
 /**
  * Command: kdcode doctor / health
  */
-async function runDoctor() {
+async function runDoctor(args = []) {
   console.log("────────────────────────────────────────────────────────────────────────");
   console.log("🩺 KD CODE ECOSYSTEM DOCTOR & DIAGNOSTIC PROBE");
   console.log("────────────────────────────────────────────────────────────────────────\n");
 
   const config = loadEcosystemConfig();
   let hasFailures = false;
+
+  // Sibling filter from args or environment variable:
+  // e.g. "kdcode doctor krusch" or "kdcode doctor --sibling=krusch" or KDCODE_DOCTOR_SIBLINGS=krusch
+  const filterArg =
+    args.find((a) => !a.startsWith("--")) ||
+    args.find((a) => a.startsWith("--sibling="))?.split("=")[1] ||
+    args.find((a) => a.startsWith("--only="))?.split("=")[1] ||
+    process.env.KDCODE_DOCTOR_SIBLINGS;
+
+  const targetSiblings = filterArg
+    ? filterArg
+        .split(",")
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean)
+    : null;
 
   // 1. PostgreSQL Persistence Substrate
   const dbHost = process.env.DB_HOST || "127.0.0.1";
@@ -240,7 +273,23 @@ async function runDoctor() {
 
   // 2. Sibling Repositories & Version Pin Verification
   console.log("\n  📦 Ecosystem Sibling Dependencies:");
-  for (const [name, sibConfig] of Object.entries(config.siblings)) {
+  if (targetSiblings) {
+    console.log(`     (Filtered to: ${targetSiblings.join(", ")})`);
+  }
+
+  const siblingsToCheck = targetSiblings
+    ? Object.entries(config.siblings).filter(([name]) =>
+        targetSiblings.includes(name.toLowerCase()),
+      )
+    : Object.entries(config.siblings);
+
+  if (targetSiblings && siblingsToCheck.length === 0) {
+    hasFailures = true;
+    console.log(`     🔴 No matching siblings found for filter: ${targetSiblings.join(", ")}`);
+    console.log(`        Available siblings: ${Object.keys(config.siblings).join(", ")}`);
+  }
+
+  for (const [name, sibConfig] of siblingsToCheck) {
     const check = checkSibling(name, sibConfig);
     if (check.ok) {
       const pinInfo = check.pinnedCommit ? ` [pinned: ${check.pinnedCommit}]` : "";
@@ -488,7 +537,7 @@ async function main() {
     }
     case "doctor":
     case "health": {
-      await runDoctor();
+      await runDoctor(args);
       break;
     }
     case "demo-invariant": {
@@ -520,7 +569,7 @@ async function main() {
 KD Code Unified CLI (v0.1.0)
 Usage:
   kdcode up [--no-ui] [--port=3778] [--web-port=5733]  Start full ecosystem stack
-  kdcode doctor | health                               Inspect health and missing pieces
+  kdcode doctor [sibling] | health                     Inspect health and missing pieces
   kdcode demo-invariant                                Run 7-step write invariant proof
   kdcode verify-models                                 Verify prompt packaging & prefix parity across providers
   kdcode bench [--iterations=25]                       Run measured performance & reliability benchmarks
